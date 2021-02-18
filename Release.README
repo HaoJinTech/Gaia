@@ -1,0 +1,33 @@
+[ReleaseNotes]:   
+[Platform]:         Gaia
+[Version]:          V1 
+[Time]:             2021-02-18
+
+1) Aurora Git Branch Structure
+   This is the branch descriptions for all branches.
+   Master branch						(Blue PC Tools release Branch)
+        ---  develop branch 			(FW BSP Release Branch ) 
+		    --- UTXX Branch 			(Develop working Branch ) 
+    Notes: 				
+		UTXX Branch depends current Linux Version.
+					
+2)  FW Tag
+	There are two steps for each release:
+    a. tag the version with the following comand
+		# git tag -a tagName -m "my tag"
+		# git push origin --tags	
+        For example: 
+			it will tag V2.1.0 git and push to remote server.	
+			#git tag -a V2.1.0 -m "support RCPL32 and USB Boot support"
+			#git push origin --tags		
+	
+	b. merge UTXX branch the develop branch 
+		# git checkout develop
+		# git merge UTXX
+		It needs to solve the conflict first if the conflict occurs.		
+
+Warning:
+    ####################################################################################################
+	a. The Develop & Master branch only can be operated by release Persion, other memeber Do not Touch it.  
+	b. Only HJ user can release new BSP Image, others members can not allowed to release.
+    ####################################################################################################

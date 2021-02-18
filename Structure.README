@@ -1,0 +1,15 @@
+
+The folder structure of git is indicated in the following.
+
+Root
+	LinuxPrj	
+		Linux Source Codes & Project scripts
+	0_Bootloader
+		Bootloader Patch
+	1_Linux
+		Linux Patch
+	2_Application
+		Application & Middleware
+	5_Docs
+		Develop document
+	
