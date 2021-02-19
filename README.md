@@ -18,3 +18,7 @@ Git Large File Storage(https://git-lfs.github.com/)
 sudo apt install git-lfs
 git lfs install
 git lfs track "filename"
+
+install pkg offline
+dpkg -i filename.deb
+https://ubuntu.pkgs.org/14.04/ubuntu-main-amd64/libtinfo-dev_5.9+20140118-1ubuntu1_amd64.deb.html
