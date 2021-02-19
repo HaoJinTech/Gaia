@@ -1,0 +1,49 @@
+树莓派启动的相关问题
+树莓派启动的相关问题，会从config.txt一直介绍到 Linux 如何启动，启动流程分析，自启动脚本实现。
+
+要想理解树莓派系统的运行机制，得先来看看树莓派是如何启动的。
+
+boot
+树莓派的boot及其他github
+
+https://github.com/raspberrypi
+
+树莓派的boot启动过程
+pi@raspberrypi ~ $ ls -a /boot/
+.                       COPYING.linux     LICENSE.oracle
+..                      fixup_cd.dat      overlays
+bcm2708-rpi-b.dtb       fixup.dat         start_cd.elf
+bcm2708-rpi-b-plus.dtb  fixup_db.dat      start_db.elf
+bcm2708-rpi-cm.dtb      fixup_x.dat       start.elf
+bcm2709-rpi-2-b.dtb     issue.txt         start_x.elf
+bootcode.bin            kernel7.img       System Volume Information
+cmdline.txt             kernel.img
+config.txt              LICENCE.broadcom
+为了降低成本，树莓派省去了传统计算机用来存储引导加载程序的板载存储器(BIOS), 直接把引导程序放在了SD卡中。
+
+树莓派2具有一款博通的BCM2836系统芯片, 当启动时，ARM Cortex-A7的CPU会处于复位状态，由VideoCore IV GPU核心负责启动系统。（所以大部分boot的启动都是由GPU code来完成，而不是CPU）
+
+第一阶段, 从系统芯片中加载第一阶段的启动程序，这个启动程序负责挂载在SD卡中的FAT32的文件系统，从而让他可以启动第二阶段的boot（bootcode.bin），这部分程序是写死在在芯片中的，所以不能修改。
+第二阶段bootcode.bin则用来从SD卡上检索GPU固件（start.elf），然后运行它，从而启动GPU
+start.elf启动后，读取存放系统配置的文件config.txt。当config.txt文件被加载解析之后, start.elf会读取cmdline.txt和kernel.img. cmdline.txt包含内核运行的参数，而kernel.img将会被加载到处理器分配的共享内存中，当内核加载成功，处理器将结束复位状态，内核开始正式运行，系统启动正式开始。
+start.elf除了上面的，也会传递一些额外的参数给内核，比如DMA通道，GPU参数，MAC地址，eMMC时钟速度、内核寻址范围等等
+ 	dma.dmachans=0x7f35
+	bcm2708_fb.fbwidth=1280
+	bcm2708_fb.fbheight=1024
+	bcm2708.boardrev=0xe
+	bcm2708.serial=0xd9b35572
+	smsc95xx.macaddr=B8:27:EB:B3:55:72
+	sdhci-bcm2708.emmc_clock_freq=250000000
+	vc_mem.mem_base=0xec00000
+	vc_mem.mem_size=0x10000000
+	console=ttyAMA0,115200
+	kgdboc=ttyAMA0,115200
+	console=tty1
+	root=/dev/mmcblk0p2
+	rootfstype=ext4
+	rootwait 
+主流的linux内核可能并没有这些参数
+
+树莓派的官网上也提供引导程程序的精简版本（fixup_cd.dat,start_cd.elf，用于GPU内存只有16MB的时候，会损失部分CPU特性）和测试版本（fixup_x.dat, start_x.elf，这种版本可以使用额外的video codes）
+
+由于这种写死的程序加上从SD卡开始引导，这就让树莓派不会因为软件的原因变成砖头的（除非硬件损坏）
