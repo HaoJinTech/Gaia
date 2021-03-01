@@ -10,7 +10,7 @@ OBJ = obj
 DEP = dep
  
 #CPPFLAGS += -I /home/
-CFLAGS += -g -Wall -I$(INCDIR) -I./lib/$(INCDIR)
+CFLAGS += -g -Wall -I$(INCDIR) -I./lib/$(INCDIR) -I./src/cmds
 LINKFLAGS +=  -lpthread
 
 CXX_SOURCES = $(foreach dir,$(SRCDIR), $(wildcard $(dir)/*.$(EXTENSION)))

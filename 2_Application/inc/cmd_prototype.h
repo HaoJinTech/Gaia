@@ -22,16 +22,14 @@
 #define KEY_SIZE			32
 #define DESC_SIZE			128
 
-typedef void (*cmdscall_func)(char* recv_buf, SEND_BUF send_buf_fun);
+typedef void (*cmdscall_func)(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun);
 
-struct Cmd_reg_item
+typedef struct cmd_obj
 {
-	char	key[KEY_SIZE];		/* the name of system call */
-	char    desc[DESC_SIZE];		/* describe the function */ 
+	char	*key;		/* the name of system call */
+	char    *desc;		/* describe the function */ 
 	cmdscall_func func;		/* the function address of system call */
-	
-    struct list_head list;
-};
+}CMD_OBJ;
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/ 
