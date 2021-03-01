@@ -28,12 +28,13 @@ static LIST_HEAD(rb_item_root);
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
+/* Public functions ---------------------------------------------------------*/
 struct rb * rb_malloc(char *name, uint16_t size, uint32_t buffer_max_size)
 {
-    uint8_t *pbuf = NULL;
+    char *pbuf = NULL;
     struct rb *prb = NULL;
     
-    pbuf = (uint8_t*)malloc(size);
+    pbuf = (char*)malloc(size);
     prb = (struct rb*)malloc(sizeof(struct rb));
     if(pbuf == NULL || prb == NULL){
         return NULL;
@@ -60,7 +61,7 @@ struct rb * rb_malloc(char *name, uint16_t size, uint32_t buffer_max_size)
 	*         size   - Size of the buffer.
   * @retval None.
   */
-void rb_init(struct rb* rb, uint8_t *pool, uint16_t size)
+void rb_init(struct rb* rb, char *pool, uint16_t size)
 {
 	APP_ASSERT(rb);
 
@@ -74,12 +75,12 @@ void rb_init(struct rb* rb, uint8_t *pool, uint16_t size)
 
 uint32_t rb_remalloc(struct rb* prb)
 {
-	uint8_t *pdata = NULL;
+	char *pdata = NULL;
 	uint32_t length = 0;
 	if(prb->buffer_size >= RB_MAX_SIZE || prb->buffer_size>= prb->buffer_max_size)
 		return 0;
 	length = prb->buffer_size + RB_ADDITION_SIZE>RB_MAX_SIZE ? RB_MAX_SIZE:prb->buffer_size + RB_ADDITION_SIZE;
-	pdata = (uint8_t*)malloc(length);
+	pdata = (char*)malloc(length);
     APP_ASSERT(pdata);
 
 	length = rb_lenth(prb);
@@ -179,7 +180,7 @@ retry:
 	*         length - Desired length of round buffer.
   * @retval None.
   */
-uint32_t rb_get(struct rb* rb, uint8_t *ptr, uint16_t length)
+uint32_t rb_get(struct rb* rb, char *ptr, uint16_t length)
 {
     uint32_t size;
 
@@ -211,11 +212,11 @@ uint32_t rb_get(struct rb* rb, uint8_t *ptr, uint16_t length)
     return length;
 }
 
-uint8_t *rb_getline(struct rb* rb, uint8_t *tailed, uint16_t tcount, uint32_t *rx_size)
+char *rb_getline(struct rb* rb, char *tailed, uint16_t tcount, uint32_t *rx_size)
 {
 	uint16_t temp_index = rb->read_index;
 	uint16_t temp_tcount = 0;
-	uint8_t *line = NULL;
+	char *line = NULL;
 	uint16_t size = 0;
 
 	if(rx_size == NULL)
@@ -236,7 +237,7 @@ uint8_t *rb_getline(struct rb* rb, uint8_t *tailed, uint16_t tcount, uint32_t *r
 	}
 	
 	if(temp_tcount == tcount){
-		line = (uint8_t*)malloc(size+1);
+		line = (char*)malloc(size+1);
 		if(line == NULL)
 			return NULL;
 		

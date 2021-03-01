@@ -19,8 +19,13 @@
 #define TCP_RX_BUFFER_SIZE_DEF      4096
 #define TCP_RX_BUFFER_SIZE_MAX_DEF  65536
 
+#define SYMBOL_TAILED     "\r\n"
+
 #define LOCAL              static
 #define RET_OK             1
 #define RET_ERROR         -1
+
+#define IPC_NUM_CMD         17
+
 
 #endif

@@ -14,6 +14,7 @@
 #define  APP_DEBUG_H
 /* Includes ------------------------------------------------------------------*/
 #include "platform.h"
+#include "stdio.h"
 
 #ifdef APP_ASSERT_ENABLE
 #include <assert.h>
@@ -33,6 +34,7 @@
 #define LOG_DEBUG                       APP_DBG_ON
 #define CONF_DEBUG                      APP_DBG_ON
 #define TCP_DEBUG                       APP_DBG_ON
+#define CMD_DEBUG                       APP_DBG_ON
 #define RFDEV_DEBUG                     APP_DBG_ON
 #define ATT_DEBUG                       APP_DBG_ON
 #define CASE_DEBUG                      APP_DBG_ON
@@ -58,6 +60,7 @@ void sys_arch_assert(const char* file, int line);
  */
 #define APP_DBG_LEVEL_ALL     0x00
 #define APP_DBG_LEVEL_OFF     LWIP_DBG_LEVEL_ALL /* compatibility define only */
+#define APP_DBG_LEVEL_INFO    0x00
 #define APP_DBG_LEVEL_WARNING 0x01 /* file open failed, buffer overflow, ... */
 #define APP_DBG_LEVEL_SERIOUS 0x02 /* memory allocation failures, ... */
 #define APP_DBG_LEVEL_SEVERE  0x03
@@ -95,16 +98,16 @@ void sys_arch_assert(const char* file, int line);
  *  AND is of correct type AND is at least APP_DBG_LEVEL
  */
 #define APP_DEBUGF(debug, message) do { \
-                               if ( \
+                                   if ( \
                                    ((debug) & APP_DBG_ON) && \
                                    ((debug) & APP_DBG_TYPES_ON) && \
                                    ((uint16_t)((debug) & APP_DBG_MASK_LEVEL) >= APP_DBG_MIN_LEVEL)) { \
-                                 APP_PLATFORM_DIAG(message); \
-                                 if ((debug) & APP_DBG_HALT) { \
-                                   while(1); \
-                                 } \
-                               } \
-                             } while(0)
+                                      APP_PLATFORM_DIAG(message); \
+                                      if ((debug) & APP_DBG_HALT) { \
+                                        while(1); \
+                                      } \
+                                    } \
+                                  } while(0)
 
 
 #else  /* APP_DEBUG */

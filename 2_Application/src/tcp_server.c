@@ -1,13 +1,15 @@
-/*
- * File      : tcp_server.c
- * This file is part of RT-Thread RTOS
- * COPYRIGHT (C) 2009 RT-Thread Develop Team
- *
- * Change Logs:
- * Date           Author       Notes
- * 2021-02-28     YaoWang      first implementation
- */
+/**
+  ******************************************************************************
+  * @file    rbuffer.c
+  * @author  YORK
+  * @version V0.1.0
+  * @date    01-03-2021
+  * @brief   Round buffer stuffs, used for telnet.
+  *       
+	********** Copyright (C), 2014-2015,HJ technologies **************************
+	*/
 
+/* Includes ------------------------------------------------------------------*/
 #include <stdio.h>
 #include <netinet/in.h>   //for souockaddr_in
 #include <sys/types.h>     
@@ -26,27 +28,27 @@
 #include <pthread.h>
 #include <sys/epoll.h>
 
+#include "app_debug.h"
+#include "cmd_msg.h"
 #include "list.h"
 #include "platform.h"
 #include "sys_config.h"
 #include "rbuffer.h"
 
-typedef struct tcp_cmd_msg{
-    char *recv_buf;
-    char *send_buf;
-    uint32_t sock_fd;
-} TCP_CMD_MSG;
-
+/* Private typedef -----------------------------------------------------------*/
 typedef struct tcp_rx_rbuf{
     int32_t sock_fd;
     RBUF     *rxbuf;
     struct list_head list;
 } TCP_SOCK_BUFS;
 
+/* Private define ------------------------------------------------------------*/
+/* Private macro -------------------------------------------------------------*/
+/* Private variables ---------------------------------------------------------*/
+const int PORT = SERVER_PORT_DEF;
 TCP_SOCK_BUFS rx_buf_list_root;
 
-const int PORT = SERVER_PORT_DEF;
-
+/* Private function prototypes -----------------------------------------------*/
 LOCAL void listen_loop();
 LOCAL void accept_conn(uint32_t sock_fd, uint32_t epollfd);
 LOCAL int32_t recv_message(uint32_t sock_fd);
@@ -54,8 +56,7 @@ LOCAL uint32_t init_rx_buffer(uint32_t accept_fd);
 LOCAL TCP_SOCK_BUFS *fd2rxbuf(uint32_t sock_fd);
 LOCAL void close_sock(uint32_t sock_fd);
 
-int  tcp_server_init(void);
-
+/* Public functions ---------------------------------------------------------*/
 int tcp_server_init(void) {
     int sock_fd;
     struct sockaddr_in server_addr;
@@ -88,6 +89,9 @@ int tcp_server_init(void) {
 
     return 0;
 }
+
+
+/* Private functions ---------------------------------------------------------*/
 
 LOCAL uint32_t init_rx_buffer(uint32_t accept_fd)
 {
@@ -140,20 +144,37 @@ LOCAL TCP_SOCK_BUFS *fd2rxbuf(uint32_t sock_fd)
     return NULL;
 }
 
+LOCAL int32_t send_message(uint32_t dest_fd, char *buf, uint32_t len)
+{
+    return send(dest_fd, buf, len, 0);
+}
+
+LOCAL int32_t check_buf_and_send_msg(TCP_SOCK_BUFS *tcp_rx_buf)
+{
+    uint32_t rx_size = 0;
+    char *line = NULL;
+    line = rb_getline(tcp_rx_buf->rxbuf, SYMBOL_TAILED, sizeof(SYMBOL_TAILED)-1, &rx_size);
+
+    if(line == NULL)
+        return RET_OK;
+    APP_DEBUGF(TCP_DEBUG | APP_DBG_TRACE, ("[check_buf_and_send_msg] get line: \r\n%s", line));
+    send_cmd_msg(tcp_rx_buf->sock_fd, line, send_message);
+    return RET_OK;
+}
+
 LOCAL int32_t recv_message(uint32_t sock_fd) {
 #define RX_TEMP_LEN  2048
     int32_t read_len = 0;
     TCP_SOCK_BUFS *tcp_rx_buf;
     uint32_t put_size = 0;
     uint8_t recv_buf[RX_TEMP_LEN];
-    printf("[recv_message] sock_fd = %d\n",sock_fd);
+    APP_DEBUGF(TCP_DEBUG | APP_DBG_TRACE, ("[recv_message] sock_fd = %d\n",sock_fd));
 
     tcp_rx_buf = fd2rxbuf(sock_fd);
     if(tcp_rx_buf == NULL)
         return RET_ERROR;
 
     do {
-
         read_len = recv(sock_fd, recv_buf, RX_TEMP_LEN, 0);
         if(read_len == 0)
             return RET_ERROR;
@@ -162,10 +183,8 @@ LOCAL int32_t recv_message(uint32_t sock_fd) {
         if(put_size != read_len)
             return RET_ERROR;
     }while(read_len == RX_TEMP_LEN);
-/*
-    strcpy(send_buf, recv_buf);
-    send(sock_fd, send_buf, sizeof(send_buf), 0);
-*/
+
+    check_buf_and_send_msg(tcp_rx_buf);
     return RET_OK;
 }
 
