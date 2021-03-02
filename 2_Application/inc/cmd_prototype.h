@@ -10,8 +10,8 @@
 	*/
 	
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef  TCP_SERVER_H
-#define  TCP_SERVER_H
+#ifndef  TCP_PROTOTYPE_H
+#define  TCP_PROTOTYPE_H
 
 /* Includes ------------------------------------------------------------------*/
 #include "stdint.h"

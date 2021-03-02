@@ -13,6 +13,7 @@
 #include "cmd_prototype.h"
 #include "platform.h"
 
+#include "UNKNOW.c"
 #include "ATT.c"
 #include "PHA.c"
 // TODO: add new cmd src file here
@@ -25,4 +26,4 @@ CMD_OBJ cmd_objs[] = {
     CMDOBJ_UNKNOW
 };
 
-#define CMD_OBJ_NUM   (sizeof(cmd_objs) / sizeof(CMD_OBJ))
+const uint32_t CMD_OBJ_NUM  = (sizeof(cmd_objs) / sizeof(CMD_OBJ));

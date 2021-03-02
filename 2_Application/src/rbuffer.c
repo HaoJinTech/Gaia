@@ -35,6 +35,7 @@ struct rb * rb_malloc(char *name, uint16_t size, uint32_t buffer_max_size)
     struct rb *prb = NULL;
     
     pbuf = (char*)malloc(size);
+	memset(pbuf,0,size);
     prb = (struct rb*)malloc(sizeof(struct rb));
     if(pbuf == NULL || prb == NULL){
         return NULL;
@@ -42,7 +43,8 @@ struct rb * rb_malloc(char *name, uint16_t size, uint32_t buffer_max_size)
     prb->buffer_ptr = pbuf;
     prb->buffer_size = size;
 
-    prb->read_index = prb->write_index = 0;
+    prb->read_index = 0;
+	prb->write_index = 0;
     prb->buffer_max_size = buffer_max_size;
     if(name){
         sprintf(prb->name,"%s",name);

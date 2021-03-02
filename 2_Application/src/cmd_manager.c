@@ -101,7 +101,7 @@ LOCAL void *cmd_manager(void *param)
         if(size < 0){
             APP_DEBUGF(CMD_DEBUG | APP_DBG_LEVEL_SERIOUS , ("[cmd_manager] msgrcv failed (%d).\r\n", size));
         }
-        APP_DEBUGF(CMD_DEBUG | APP_DBG_TRACE , ("[cmd_manager] rx msg buf: (%s).\r\n", msg.recv_buf));
+        APP_DEBUGF(CMD_DEBUG | APP_DBG_TRACE , ("[cmd_manager] rx msg buf: \r\n%s", msg.recv_buf));
 
         check_key_and_find_cmd_entry(&msg);
 
@@ -114,7 +114,7 @@ LOCAL int32_t check_key(char *line, char *key, uint32_t key_len)
 {
     int i =0;
     for(i=0; i<key_len; i++){
-        if(line[i] ！= key[i])
+        if(line[i] != key[i])
             return 0;
     }
     if(line[i] == ' ' || line[i] == '\r' ||  line[i] == '\n')
@@ -125,8 +125,8 @@ LOCAL int32_t check_key(char *line, char *key, uint32_t key_len)
 LOCAL void check_key_and_find_cmd_entry(CMD_MSG *msg)
 {
     uint32_t i=0;
-    for(i=0; i<CMD_OBJ_NUM; i++){
-        if(check_key(msg->recv_buf, cmd_objs[i].key, sizeof(cmd_objs[i].key))){
+    for(i=0; i<CMD_OBJ_NUM-1; i++){
+        if(check_key(msg->recv_buf, cmd_objs[i].key, sizeof(cmd_objs[i].key)-1)){
             break;
         }
     }

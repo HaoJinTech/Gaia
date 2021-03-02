@@ -52,9 +52,11 @@ TCP_SOCK_BUFS rx_buf_list_root;
 LOCAL void listen_loop();
 LOCAL void accept_conn(uint32_t sock_fd, uint32_t epollfd);
 LOCAL int32_t recv_message(uint32_t sock_fd);
+LOCAL int32_t send_message(uint32_t dest_fd, char *buf, uint32_t len);
 LOCAL uint32_t init_rx_buffer(uint32_t accept_fd);
 LOCAL TCP_SOCK_BUFS *fd2rxbuf(uint32_t sock_fd);
 LOCAL void close_sock(uint32_t sock_fd);
+
 
 /* Public functions ---------------------------------------------------------*/
 int tcp_server_init(void) {
@@ -118,6 +120,7 @@ LOCAL void accept_conn(uint32_t sock_fd, uint32_t epollfd) {
     struct epoll_event event;
     socklen_t len = sizeof(struct sockaddr);
     uint32_t accept_fd = 0;
+    char recv_buf[128];
 
     accept_fd = accept(sock_fd, (struct sockaddr*)&clientaddr, &len);
 
@@ -125,6 +128,8 @@ LOCAL void accept_conn(uint32_t sock_fd, uint32_t epollfd) {
         perror("accept error");
         return;
     }
+    recv(accept_fd, recv_buf, 128, 0);
+    printf("accept recv: %s", recv_buf);
 
     event.data.fd = accept_fd;
     event.events = EPOLLIN | EPOLLET | EPOLLRDHUP;
@@ -146,7 +151,11 @@ LOCAL TCP_SOCK_BUFS *fd2rxbuf(uint32_t sock_fd)
 
 LOCAL int32_t send_message(uint32_t dest_fd, char *buf, uint32_t len)
 {
-    return send(dest_fd, buf, len, 0);
+    if(len == 0){
+        return send(dest_fd, buf, strlen(buf), 0);
+    }else{
+        return send(dest_fd, buf, len, 0);
+    }
 }
 
 LOCAL int32_t check_buf_and_send_msg(TCP_SOCK_BUFS *tcp_rx_buf)
@@ -178,6 +187,7 @@ LOCAL int32_t recv_message(uint32_t sock_fd) {
         read_len = recv(sock_fd, recv_buf, RX_TEMP_LEN, 0);
         if(read_len == 0)
             return RET_ERROR;
+        printf("recv: %s", recv_buf);
 
         put_size = rb_put(tcp_rx_buf->rxbuf, recv_buf, read_len);
         if(put_size != read_len)

@@ -16,7 +16,7 @@
 void cmd_unknow(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun)
 {
     // todo: parse the buf and send data to rfboard and reply to user.
-    send_buf_fun(dest_fd, UNKNOW_CMD_REPLY, sizeof(UNKNOW_CMD_REPLY));
+    send_buf_fun(dest_fd, UNKNOW_CMD_REPLY, 0);
 }
 
 
