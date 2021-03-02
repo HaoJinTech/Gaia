@@ -15,6 +15,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include <stdint.h>
 /* Exported types ------------------------------------------------------------*/
+extern CMD_OBJ cmd_objs[];
+
 int32_t init_cmd_manager(void);
 
 #endif

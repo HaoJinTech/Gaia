@@ -110,7 +110,25 @@ LOCAL void *cmd_manager(void *param)
     // should never reach here.
 }
 
+LOCAL int32_t check_key(char *line, char *key, uint32_t key_len)
+{
+    int i =0;
+    for(i=0; i<key_len; i++){
+        if(line[i] ！= key[i])
+            return 0;
+    }
+    if(line[i] == ' ' || line[i] == '\r' ||  line[i] == '\n')
+        return 1;
+    return 0;
+}
+
 LOCAL void check_key_and_find_cmd_entry(CMD_MSG *msg)
 {
-
+    uint32_t i=0;
+    for(i=0; i<CMD_OBJ_NUM; i++){
+        if(check_key(msg->recv_buf, cmd_objs[i].key, sizeof(cmd_objs[i].key))){
+            break;
+        }
+    }
+    cmd_objs[i].func(msg->recv_buf, msg->dest_fd, msg->send_buf_fun);
 }

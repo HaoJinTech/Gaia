@@ -17,9 +17,12 @@
 #include "PHA.c"
 // TODO: add new cmd src file here
 
-LOCAL CMD_OBJ cmd_objs[] = {
+CMD_OBJ cmd_objs[] = {
     CMDOBJ_ATT,
     CMDOBJ_PHA,
     // TODO: add new cmds here
+
+    CMDOBJ_UNKNOW
 };
 
+#define CMD_OBJ_NUM   (sizeof(cmd_objs) / sizeof(CMD_OBJ))
