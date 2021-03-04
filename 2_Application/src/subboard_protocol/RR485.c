@@ -33,9 +33,15 @@ void *radio_rack_485_read(int len)
   return 0;
 }
 
-void radio_rack_485_close(void *param)
+
+int32_t radio_rack_485_ioctrl(PROTOCL_CTRL_MSG *ctrl)
 {
-  return;
+  return 0;
+}
+
+int32_t radio_rack_485_close(void *param)
+{
+  return 0;
 }
 
 #define RR485 {PROTOCOL_ID_RR485, \
@@ -43,5 +49,6 @@ void radio_rack_485_close(void *param)
         radio_rack_485_open, \
         radio_rack_485_write, \
         radio_rack_485_read, \
+        radio_rack_485_ioctrl,\
         radio_rack_485_close}
 

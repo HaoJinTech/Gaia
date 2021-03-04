@@ -10,11 +10,10 @@
 	*/
 	
 /* Includes ------------------------------------------------------------------*/
+#include "platform.h"
 #include "bus_prototype.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <wiringPi.h>
-#include <wiringPiSPI.h>
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
@@ -42,7 +41,7 @@ void *bus_spi_read(int len)
   return 0;
 }
 
-int32_t bus_spi_ioctrl(CTRL_MSG *msg)
+int32_t bus_spi_ioctrl(BUS_CTRL_MSG *msg)
 {
   return RET_OK;
 }
@@ -52,10 +51,10 @@ int32_t bus_spi_close(void *param)
   return RET_OK;
 }
 
-#define BUS_SPI   {BUS_ID_SPI   \
-                  bus_spi_init  \
-                  bus_spi_open  \
-                  bus_spi_write \
-                  bus_spi_read  \
-                  bus_spi_ioctrl\
+#define BUS_SPI   {BUS_ID_SPI,   \
+                  bus_spi_init,  \
+                  bus_spi_open,  \
+                  bus_spi_write, \
+                  bus_spi_read,  \
+                  bus_spi_ioctrl,\
                   bus_spi_close}

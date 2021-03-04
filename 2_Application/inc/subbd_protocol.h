@@ -51,17 +51,17 @@ typedef struct data_type_CCSV
     uint32_t value;
 }CCSV;
 
-typedef struct ctrl_msg
+typedef struct protocl_ctrl_msg
 {
     uint32_t  type;
     void      *val;
-}CTRL_MSG;
+}PROTOCL_CTRL_MSG;
 
 typedef int32_t (*subbd_protocol_init)(void *param);
 typedef int32_t (*subbd_protocol_open)(void *param);
 typedef int32_t (*subbd_protocol_write)(void *data);
 typedef void *(*subbd_protocol_read)(int len);
-typedef int32_t (*subbd_protocol_ioctrl)(CTRL_MSG *ctrl);
+typedef int32_t (*subbd_protocol_ioctrl)(PROTOCL_CTRL_MSG *ctrl);
 typedef int32_t (*subbd_protocol_close)(void *param);
 
 typedef struct subbd_protocol

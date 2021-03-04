@@ -15,17 +15,17 @@
 /* Includes ------------------------------------------------------------------*/
 #include "platform.h"
 /* Exported types ------------------------------------------------------------*/
-typedef struct ctrl_msg
+typedef struct bus_ctrl_msg
 {
     uint32_t  type;
     void      *val;
-}CTRL_MSG;
+}BUS_CTRL_MSG;
 
 typedef int32_t (*bus_init)(uint32_t port, uint32_t freq, void *other);
 typedef int32_t (*bus_open)(void);
 typedef int32_t (*bus_write)(char *data, uint32_t len);
 typedef void *(*bus_read)(int len);
-typedef int32_t (*bus_ioctrl)(CTRL_MSG *msg);
+typedef int32_t (*bus_ioctrl)(BUS_CTRL_MSG *msg);
 typedef int32_t (*bus_close)(void *param);
 
 typedef struct bus_driver
