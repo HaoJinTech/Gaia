@@ -43,6 +43,13 @@ typedef struct tcp_rx_rbuf{
 } TCP_SOCK_BUFS;
 
 /* Private define ------------------------------------------------------------*/
+#define TCP_DEBUG                       APP_DBG_ON
+
+#define TCP_RX_BUFFER_SIZE_DEF      4096
+#define TCP_RX_BUFFER_SIZE_MAX_DEF  65536
+
+#define SYMBOL_TAILED     "\r\n"
+
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 const int PORT = SERVER_PORT_DEF;
@@ -129,7 +136,7 @@ LOCAL void accept_conn(uint32_t sock_fd, uint32_t epollfd) {
         return;
     }
     recv(accept_fd, recv_buf, 128, 0);
-    printf("accept recv: %s", recv_buf);
+    APP_DEBUGF(TCP_DEBUG | APP_DBG_TRACE, ("accept recv: %s", recv_buf));
 
     event.data.fd = accept_fd;
     event.events = EPOLLIN | EPOLLET | EPOLLRDHUP;
@@ -166,7 +173,7 @@ LOCAL int32_t check_buf_and_send_msg(TCP_SOCK_BUFS *tcp_rx_buf)
 
     if(line == NULL)
         return RET_OK;
-    APP_DEBUGF(TCP_DEBUG | APP_DBG_TRACE, ("[check_buf_and_send_msg] get line: \r\n%s", line));
+    APP_DEBUGF(TCP_DEBUG | APP_DBG_TRACE, ("get line: %s", line));
     send_cmd_msg(tcp_rx_buf->sock_fd, line, send_message);
     return RET_OK;
 }
@@ -177,7 +184,7 @@ LOCAL int32_t recv_message(uint32_t sock_fd) {
     TCP_SOCK_BUFS *tcp_rx_buf;
     uint32_t put_size = 0;
     uint8_t recv_buf[RX_TEMP_LEN];
-    APP_DEBUGF(TCP_DEBUG | APP_DBG_TRACE, ("[recv_message] sock_fd = %d\n",sock_fd));
+    APP_DEBUGF(TCP_DEBUG | APP_DBG_TRACE, ("sock_fd = %d\n",sock_fd));
 
     tcp_rx_buf = fd2rxbuf(sock_fd);
     if(tcp_rx_buf == NULL)
@@ -187,7 +194,6 @@ LOCAL int32_t recv_message(uint32_t sock_fd) {
         read_len = recv(sock_fd, recv_buf, RX_TEMP_LEN, 0);
         if(read_len == 0)
             return RET_ERROR;
-        printf("recv: %s", recv_buf);
 
         put_size = rb_put(tcp_rx_buf->rxbuf, recv_buf, read_len);
         if(put_size != read_len)
@@ -223,7 +229,7 @@ LOCAL void listen_loop(uint32_t sock_fd)
     event.data.fd = sock_fd;
 
     if (epoll_ctl(epollfd, EPOLL_CTL_ADD, sock_fd, &event) < 0) {
-        printf("register epoll event err !");
+        APP_DEBUGF(TCP_DEBUG | APP_DBG_LEVEL_SEVERE, ("register epoll event err !\n"));
         return;
     }
 
@@ -231,7 +237,7 @@ LOCAL void listen_loop(uint32_t sock_fd)
         ret = epoll_wait(epollfd, eventList, CLI_NUM_MAX, timeout);
 
         if (ret < 0) {
-            printf("epoll event err!");
+            APP_DEBUGF(TCP_DEBUG | APP_DBG_LEVEL_SEVERE, ("epoll event err!\n"));
             break;
         } else if (ret == 0) {
             continue;
@@ -239,13 +245,13 @@ LOCAL void listen_loop(uint32_t sock_fd)
 
         for (i = 0; i < ret; i++) {
             if ((eventList[i].events & EPOLLERR) || (eventList[i].events & EPOLLHUP) || !(eventList[i].events & EPOLLIN)) {
-                printf("epoll error\n");
+                APP_DEBUGF(TCP_DEBUG | APP_DBG_LEVEL_SEVERE, ("epoll error\n"));
                 close_sock(eventList[i].data.fd);
                 exit(-1);
             }
 
             if (eventList[i].events & EPOLLRDHUP) {
-                printf("//one client close the conne.//\n");
+                APP_DEBUGF(TCP_DEBUG | APP_DBG_TRACE, ("one client close the conne.\n"));
                 close_sock(eventList[i].data.fd);
             }
 

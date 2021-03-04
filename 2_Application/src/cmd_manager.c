@@ -23,8 +23,6 @@
 #include <sys/ipc.h>
 
 /* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-
 typedef struct cmd_msg{
     long        msg_type;
 
@@ -33,10 +31,13 @@ typedef struct cmd_msg{
     uint32_t    dest_fd;
 } CMD_MSG;
 
+/* Private define ------------------------------------------------------------*/
+#define CMD_DEBUG                       APP_DBG_ON
+
 /* Private macro -------------------------------------------------------------*/
 #define CMD_MSG_TYPE        0x0015
 /* Private variables ---------------------------------------------------------*/
-int msq_id = -1;
+LOCAL int msq_id = -1;
 /* Private function prototypes -----------------------------------------------*/
 LOCAL void *cmd_manager(void *param);
 LOCAL void check_key_and_find_cmd_entry(CMD_MSG *msg);
@@ -93,15 +94,15 @@ LOCAL void *cmd_manager(void *param)
 
     msq_id =  msgget( IPC_PRIVATE, 0666 ) ;
 	if(msq_id == -1){
-		APP_DEBUGF(CMD_DEBUG | APP_DBG_LEVEL_SERIOUS , ("[cmd_manager] msgget failed (%d).\r\n",msq_id));
+		APP_DEBUGF(CMD_DEBUG | APP_DBG_LEVEL_SERIOUS , ("msgget failed (%d).\r\n",msq_id));
 		return 0;
     }
     while(1){
         size=msgrcv(msq_id, (void *)&msg,sizeof(CMD_MSG)-sizeof(long),CMD_MSG_TYPE,0);
         if(size < 0){
-            APP_DEBUGF(CMD_DEBUG | APP_DBG_LEVEL_SERIOUS , ("[cmd_manager] msgrcv failed (%d).\r\n", size));
+            APP_DEBUGF(CMD_DEBUG | APP_DBG_LEVEL_SERIOUS , ("msgrcv failed (%d).\r\n", size));
         }
-        APP_DEBUGF(CMD_DEBUG | APP_DBG_TRACE , ("[cmd_manager] rx msg buf: \r\n%s", msg.recv_buf));
+        APP_DEBUGF(CMD_DEBUG | APP_DBG_TRACE , ("rx msg buf: \r\n%s", msg.recv_buf));
 
         check_key_and_find_cmd_entry(&msg);
 

@@ -19,6 +19,8 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
+#define RB_DEBUG                        APP_DBG_ON
+
 #ifndef RB_ADDITION_SIZE
 #	define RB_ADDITION_SIZE 128
 #endif
@@ -95,7 +97,7 @@ uint32_t rb_remalloc(struct rb* prb)
 	prb->write_index = length;
 	
 	APP_DEBUGF(RB_DEBUG | APP_DBG_TRACE , 
-	    ("rb_remalloc:(%s)remalloc round buffer.\r\n",prb->name));
+	    ("(%s)remalloc round buffer.\r\n",prb->name));
 	
 	return 1;
 }

@@ -8,8 +8,8 @@ LIBDIR = lib
 OBJ = obj
 DEP = dep
  
-CFLAGS += -g -Wall -I./inc -I./lib/inc -I./src/cmds -I./inc/bll
-LINKFLAGS +=  -lpthread
+CFLAGS += -g -Wall -I./inc -I./lib/inc -I./src -I./inc/bll 
+LINKFLAGS +=  -lpthread -lwiringPi
 
 CXX_SOURCES = $(foreach dir,$(SRCDIR), $(wildcard $(dir)/*.$(EXTENSION)))
 CXX_SOURCES += $(foreach dir,$(SRCDIR)/bll, $(wildcard $(dir)/*.$(EXTENSION)))
@@ -24,8 +24,9 @@ $(OBJ)/%.o: $(SRCDIR)/%.$(EXTENSION)
 	$(CC) -c $(CPPFLAGS) $< -o $@ $(CFLAGS)
 
 $(OBJ)/%.o: $(SRCDIR)/bll/%.$(EXTENSION)
-	$(CC) -c $(CPPFLAGS) $< -o $@ $(CFLAGS)
-  
+	$(CC) -c $(CPPFLAGS) $< -o $@ $(CFLAGS) -lpthread
+
+
 .PHONY:clean
 clean:
 	-rm  -f  $(CXX_OBJECTS)  $(DEP_FILES)  $(EXE)

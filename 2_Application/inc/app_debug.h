@@ -16,32 +16,24 @@
 #include "platform.h"
 #include "stdio.h"
 
+/* Exported types ------------------------------------------------------------*/
+/* Exported constants --------------------------------------------------------*/
+/* Exported macro ------------------------------------------------------------*/
+#define APP_DEBUG                       APP_DBG_ON
+#define APP_ASSERT_ENABLE
+
 #ifdef APP_ASSERT_ENABLE
 #include <assert.h>
 #endif
-/* Exported types ------------------------------------------------------------*/
 #ifdef DEBUG_INTO_FILE
 #	define APP_DEBUG_TO_LOG							1
 #else
 #endif
 
-#define APP_DEBUG                       APP_DBG_ON
-
 #define APP_DBG_TYPES_ON                (APP_DBG_ON | APP_DBG_TRACE | APP_DBG_STATE)
 #define APP_DBG_MIN_LEVEL               APP_DBG_LEVEL_ALL    //APP_DBG_LEVEL_ALL APP_DBG_LEVEL_WARNING
 
-#define RB_DEBUG                        APP_DBG_ON
-#define LOG_DEBUG                       APP_DBG_ON
-#define CONF_DEBUG                      APP_DBG_ON
-#define TCP_DEBUG                       APP_DBG_ON
-#define CMD_DEBUG                       APP_DBG_ON
-#define RFDEV_DEBUG                     APP_DBG_ON
-#define ATT_DEBUG                       APP_DBG_ON
-#define CASE_DEBUG                      APP_DBG_ON
-#define IAP_DEBUG                       APP_DBG_ON
 
-/* Exported constants --------------------------------------------------------*/
-/* Exported macro ------------------------------------------------------------*/
 void log_dbg_printf(const char *fmt, ...);
 void sys_arch_assert(const char* file, int line);
 #ifdef APP_DEBUG_TO_LOG
@@ -102,6 +94,7 @@ void sys_arch_assert(const char* file, int line);
                                    ((debug) & APP_DBG_ON) && \
                                    ((debug) & APP_DBG_TYPES_ON) && \
                                    ((uint16_t)((debug) & APP_DBG_MASK_LEVEL) >= APP_DBG_MIN_LEVEL)) { \
+                                      APP_PLATFORM_DIAG(("[%s:%s:%d]: ",__FILE__, __FUNCTION__, __LINE__));\
                                       APP_PLATFORM_DIAG(message); \
                                       if ((debug) & APP_DBG_HALT) { \
                                         while(1); \

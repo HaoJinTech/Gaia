@@ -12,20 +12,14 @@
 #ifndef  USER_CONFIG_H
 #define  USER_CONFIG_H
 
+#include "stdint.h"
+
 #define SYS_CONFIG_PATH   "./gaia.conf"
 #define CLI_NUM_MAX        64
 #define SERVER_PORT_DEF    50000
 
-#define TCP_RX_BUFFER_SIZE_DEF      4096
-#define TCP_RX_BUFFER_SIZE_MAX_DEF  65536
-
-#define SYMBOL_TAILED     "\r\n"
-
 #define LOCAL              static
 #define RET_OK             1
 #define RET_ERROR         -1
-
-#define IPC_NUM_CMD         17
-
 
 #endif

@@ -1,24 +1,23 @@
 /**
   ******************************************************************************
-  * @file    sys_config.h
+  * @file    header name
   * @author  YORK
   * @version V0.1.0
-  * @date    02-28-2021
+  * @date    03-03-2021
   * @brief   
   *
-	********** Copyright (C), 2014-2022,HJ technologies **************************
+	********** Copyright (C), 2014-2015,HJ technologies **************************
 	*/
+	
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef  SYS_CONFIG_H
-#define  SYS_CONFIG_H
+#ifndef  _HEADER_NAME_H_
+#define  _HEADER_NAME_H_
 /* Includes ------------------------------------------------------------------*/
-#include "json.h"
-
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/ 
-extern json_object *pobj;
-extern void config_init(void);
+
 
 #endif
+/********************** (C) COPYRIGHT HJ technologies *************************/
