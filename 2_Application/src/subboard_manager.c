@@ -15,6 +15,7 @@
 #include "app_debug.h"
 #include "bus_prototype.h"
 #include "subbd_protocol.h"
+#include "subboard_manager.h"
 
 #include <pthread.h>
 #include <sys/msg.h>
@@ -22,18 +23,17 @@
 
 /* Private typedef -----------------------------------------------------------*/
 // msg(channel value)-> protocal ->data(0x51 0x01 ...) ->port(spi,uart...)
-
 typedef struct subbd_msg{
     long        msg_type;
 
-    char        protocol_type;  // 0: legacy 485/232 protocal. 1: high speed new protocal.
-    char        port_id;        // 0: spi0. 1: uart0 ... device type with function?
+    SUBBD_PROTOCOL *protocol_obj;    // PROTOCOL_ID_RR485, PROTOCOL_ID_HSSPI ...
+    BUS_DRIVER     *bus_obj;         // BUS_ID_SPI, BUS_ID_UART ...
 
     void        *data;          // check subbd_protocol.h for data type
 } SUBBD_MSG;
 
 /* Private define ------------------------------------------------------------*/
-#define RF_DEBUG       APP_DBG_ON
+#define SBBD_DEBUG       APP_DBG_ON
 
 #define SBBD_MSG_TYPE        0x0020
 
@@ -50,10 +50,10 @@ extern uint32_t SUBBD_PROTOCOL_SIZE;
 
 /* Private function prototypes -----------------------------------------------*/
 LOCAL void *rfboard_manager(void *param);
-LOCAL int32_t subbd_send_data(char protocol_id, char port_id, char msg_type, void *data);
+LOCAL int32_t subbd_send_data(SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj, void *data);
+LOCAL void do_protocal(SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj, void *data);
 
 /* Public functions ----------------------------------------------------------*/
-
 int32_t init_rfboard_manager(void)
 {
     pthread_t	tid;
@@ -69,21 +69,68 @@ LOCAL void *rfboard_manager(void *param)
     ssize_t size= 0;
     msq_id =  msgget( IPC_PRIVATE, 0666 ) ;
 	if(msq_id == -1){
-		APP_DEBUGF(RF_DEBUG | APP_DBG_LEVEL_SERIOUS , ("msgget failed (%d).\r\n",msq_id));
+		APP_DEBUGF(SBBD_DEBUG | APP_DBG_LEVEL_SERIOUS , ("msgget failed (%d).\r\n",msq_id));
 		return 0;
     }
 
     while(1){
         size=msgrcv(msq_id, (void *)&msg,sizeof(SUBBD_MSG)-sizeof(long),SBBD_MSG_TYPE,0);
         if(size < 0){
-            APP_DEBUGF(RF_DEBUG | APP_DBG_LEVEL_SERIOUS , ("msgrcv failed (%d).\r\n", size));
+            APP_DEBUGF(SBBD_DEBUG | APP_DBG_LEVEL_SERIOUS , ("msgrcv failed (%d).\r\n", size));
         }
+
+        do_protocal(msg.protocol_obj, msg.bus_obj, msg.data);
     }
 }
 
-LOCAL int32_t subbd_send_data(char protocol_id, char port_id, char msg_type, void *data)
+LOCAL void do_protocal(SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj, void *data)
 {
-    
+    protocol_obj->write(data);
+}
+
+LOCAL int32_t subbd_send_data(SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj, void *data)
+{
+    int ret = 0;
+    SUBBD_MSG msg;
+    msg.msg_type = SBBD_MSG_TYPE;
+    msg.bus_obj = bus_obj;
+    msg.protocol_obj = protocol_obj;
+    msg.data = data;
+
+    ret = msgsnd(msq_id, (void *)&msg, sizeof(SUBBD_MSG)-sizeof(long), 0);
+    if(ret<0){
+        APP_DEBUGF(SBBD_DEBUG | APP_DBG_LEVEL_SERIOUS, ("[send_cmd_msg] msgsnd failed (%d).\r\n",ret));
+        return RET_ERROR;
+    }
+
     return RET_OK;
 }
 
+int32_t subbd_send_SCSV(char dset, SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj, int32_t channel, int32_t value)
+{
+    SCSV *data = (SCSV *)malloc(sizeof(SCSV));
+    data->channel = channel;
+    data->data_type = DATA_TYPE_SCSV;
+    data->dest_type = dset;
+    data->value = value;
+
+    return subbd_send_data(protocol_obj, bus_obj, data);
+}
+
+int32_t subbd_send_MCMV(char dset, SUBBD_PROTOCOL *protocol_obj, 
+    BUS_DRIVER *bus_obj, int32_t *channel, int32_t *value, uint32_t lenth)
+{
+
+}
+
+int32_t subbd_send_CCMV(char dset, SUBBD_PROTOCOL *protocol_obj, 
+    BUS_DRIVER *bus_obj, int32_t ch_offset, int32_t *value, uint32_t lenth)
+{
+
+}
+
+int32_t subbd_send_CCSV(char dset, SUBBD_PROTOCOL *protocol_obj, 
+    BUS_DRIVER *bus_obj, int32_t ch_offset, int32_t value, uint32_t lenth)
+{
+
+}

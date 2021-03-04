@@ -21,6 +21,6 @@
 int32_t set_att(uint32_t ch, int32_t val);
 int32_t get_att(uint32_t ch);
 
-int32_t init_att(uint32_t channel, uint32_t maxval, uint32_t step);
+int32_t init_att(void);
 #endif
 /********************** (C) COPYRIGHT HJ technologies *************************/

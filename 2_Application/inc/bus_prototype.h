@@ -43,8 +43,6 @@ typedef struct bus_driver
 
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
-#define BUS_ID_SPI      2
-#define BUS_ID_UART     3
 
 /* Exported functions --------------------------------------------------------*/ 
 
