@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <list.h>
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
@@ -23,8 +24,16 @@
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
 /* Private typedef -----------------------------------------------------------*/
+//需要处理的消息队列
+typedef struct Message_Type{
+	uint16_t MsgId;
+	char* MessageInfo;
+	struct list_head Node;
+};
 /* Private define ------------------------------------------------------------*/
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+#define Empty_Msg_BufferLength 256
+#define ENDLINE {255, 255, 0}
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 static const char *device = "/dev/spidev0.0";
@@ -34,6 +43,8 @@ static uint32_t speed = 10500000;
 static uint16_t delay;
 static int verbose;
 
+struct list_head MessageQueueList;
+
 char *input_tx;
 int ret = 0;
 int fd;
@@ -41,6 +52,7 @@ uint8_t *tx;
 uint8_t *rx;
 int size;
 /* Private function prototypes -----------------------------------------------*/
+
 
 //打印收发数据包的hex值和ascii值
 static void hex_dump(const void *src, size_t length, size_t line_size, char *prefix)
@@ -246,37 +258,69 @@ static void parse_opts(int argc, char *argv[])
 int32_t bus_spi_init(int argc, char *argv[])
 {
   parse_opts(argc, argv);
+  INIT_LIST_HEAD(&MessageQueueList);
   return RET_OK;
 }
 
 int32_t bus_spi_open(void)
 {
-  fd = open(device, O_RDWR);
-	if (fd < 0)
-	  pabort("can't open device");
-  return RET_OK;
+	fd = open(device, O_RDWR);
+		if (fd < 0)
+			pabort("can't open device");
+  	return RET_OK;
 }
 
 int32_t bus_spi_write(char *data, uint32_t len)
 {
-  return 0;
+	
+  	return 0;
+}
+
+int32_t bus_spi_write(struct Message_Type *msg, uint32_t len)
+{
+	list_add_tail(&msg->Node, &MessageQueueList);
+	char *readbuff;
+	transfer(fd, &msg->MessageInfo, readbuff, sizeof(&msg->MessageInfo));
+	
+	//处理readbuff
+
+  	return 0;
+}
+
+char* bus_spi_read(char * msg)
+{
+	char *readbf = msg;
+	char *longread = "";
+	char Emptystr[Empty_Msg_BufferLength];
+	memset(Emptystr,0,Empty_Msg_BufferLength);
+	//判断是否包含结束符
+	char *ret = strpbrk(readbf,(char *)ENDLINE);
+	strcat(longread, readbf);
+	if(strlen(ret)<3)//不包含完整结束符的话再读一次，并且把读到的消息放入longread队尾
+	{
+		transfer(fd, Emptystr, readbf, Empty_Msg_BufferLength);
+		ret = strpbrk(readbf,(char *)ENDLINE);
+		strcat(longread, readbf);
+	}
+	return longread;
 }
 
 void *bus_spi_read(int len)
 {
-  return 0;
+
+	return 0;
 }
 
 int32_t bus_spi_ioctrl(BUS_CTRL_MSG *msg)
 {
   
-  return RET_OK;
+	return RET_OK;
 }
 
 int32_t bus_spi_close(void *param)
 {
 	close(fd);
-  return RET_OK;
+	return RET_OK;
 }
 
 #define BUS_SPI   {BUS_ID_SPI,   \
@@ -289,5 +333,6 @@ int32_t bus_spi_close(void *param)
 
 
 //建立消息List，发送一个消息以后给这个消息列表加一个msgId
+
 //发送消息与收包消息同时进行，收到的消息包不是以255 255 0结尾就再发一个指定长度(EMTPY_MSG_LENGTH)的空包，直到收到包含255 255 0结尾的包作为接收结束
 //对于接收的消息进行
