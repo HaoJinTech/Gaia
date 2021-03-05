@@ -1,28 +1,23 @@
 /**
   ******************************************************************************
-  * @file    bll_pha.h
+  * @file    tcp_server.h
   * @author  YORK
   * @version V0.1.0
-  * @date    06-12-2015
+  * @date    02-28-2021
   * @brief   
   *
 	********** Copyright (C), 2014-2015,HJ technologies **************************
 	*/
 	
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef  _BLL_PHA_H_
-#define  _BLL_PHA_H_
-/* Includes ------------------------------------------------------------------*/
-#include "platform.h"
-#include "sys_config.h"
+#ifndef  TCP_SERVER_H
+#define  TCP_SERVER_H
 
+/* Includes ------------------------------------------------------------------*/
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/ 
-int32_t set_pha(uint32_t ch, int32_t val);
-int32_t get_pha(uint32_t ch);
+int  tcp_server_init(void);
 
-int32_t init_pha(json_object *json_obj);
 #endif
-/********************** (C) COPYRIGHT HJ technologies *************************/

@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    bll_pha.h
+  * @file    cmd_manager.h
   * @author  YORK
   * @version V0.1.0
   * @date    06-12-2015
@@ -10,19 +10,17 @@
 	*/
 	
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef  _BLL_PHA_H_
-#define  _BLL_PHA_H_
+#ifndef  _CMD_MANAGER_H_
+#define  _CMD_MANAGER_H_
 /* Includes ------------------------------------------------------------------*/
-#include "platform.h"
-#include "sys_config.h"
-
+#include <stdint.h>
+#include "cmd_prototype.h"
 /* Exported types ------------------------------------------------------------*/
-/* Exported constants --------------------------------------------------------*/
-/* Exported macro ------------------------------------------------------------*/
-/* Exported functions --------------------------------------------------------*/ 
-int32_t set_pha(uint32_t ch, int32_t val);
-int32_t get_pha(uint32_t ch);
+extern CMD_OBJ cmd_objs[];
+uint32_t CMD_OBJ_NUM;
 
-int32_t init_pha(json_object *json_obj);
+int32_t init_cmd_manager(void);
+
 #endif
+
 /********************** (C) COPYRIGHT HJ technologies *************************/

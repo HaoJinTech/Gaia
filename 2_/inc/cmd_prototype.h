@@ -1,28 +1,37 @@
 /**
   ******************************************************************************
-  * @file    bll_pha.h
+  * @file    tcp_server.h
   * @author  YORK
   * @version V0.1.0
-  * @date    06-12-2015
+  * @date    02-28-2021
   * @brief   
   *
 	********** Copyright (C), 2014-2015,HJ technologies **************************
 	*/
 	
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef  _BLL_PHA_H_
-#define  _BLL_PHA_H_
+#ifndef  TCP_PROTOTYPE_H
+#define  TCP_PROTOTYPE_H
+
 /* Includes ------------------------------------------------------------------*/
-#include "platform.h"
-#include "sys_config.h"
+#include "stdint.h"
+#include "cmd_msg.h"
+#include "list.h"
 
 /* Exported types ------------------------------------------------------------*/
+#define KEY_SIZE			32
+#define DESC_SIZE			128
+
+typedef void (*cmdscall_func)(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun);
+
+typedef struct cmd_obj
+{
+	char	*key;		/* the name of system call */
+	char    *desc;		/* describe the function */ 
+	cmdscall_func func;		/* the function address of system call */
+}CMD_OBJ;
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/ 
-int32_t set_pha(uint32_t ch, int32_t val);
-int32_t get_pha(uint32_t ch);
 
-int32_t init_pha(json_object *json_obj);
 #endif
-/********************** (C) COPYRIGHT HJ technologies *************************/

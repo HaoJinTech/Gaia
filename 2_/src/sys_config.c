@@ -1,50 +1,32 @@
 /**
   ******************************************************************************
-  * @file    bll_att.c
+  * @file    sys_config.c
   * @author  YORK
   * @version V0.1.0
-  * @date    06-12-2015
+  * @date    03-03-2021
   * @brief   
   *       
 	********** Copyright (C), 2014-2015,HJ technologies **************************
 	*/
 	
 /* Includes ------------------------------------------------------------------*/
+#include "sys_config.h"
+#include "json.h"
 #include "platform.h"
-#include "bll/bll_att.h"
-#include "bll/bll_pha.h"
 
-#include <stdlib.h>
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
+#define CONF_DEBUG                      APP_DBG_ON
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-LOCAL uint32_t g_ch_max = 0;
-LOCAL uint32_t g_val_max = 0;
-LOCAL int32_t *g_pha_vals = 0;
 /* Private function prototypes -----------------------------------------------*/
+
 /* Public functions ----------------------------------------------------------*/
 
-int32_t set_pha(uint32_t ch, int32_t val)
-{
-    // TODO: send att value to DAL layer
+json_object *pobj;
 
-    return RET_OK;
+void config_init(void){
+    pobj = json_object_from_file(SYS_CONFIG_PATH);
+
 }
 
-int32_t get_pha(uint32_t ch)
-{
-    if(ch >= g_ch_max )
-        return RET_ERROR;
-   
-    return g_pha_vals[ch];
-}
-
-int32_t init_pha(json_object *json_obj)
-{
-    g_ch_max = 32;
-    g_val_max = 365;
-    g_pha_vals = malloc(sizeof(int32_t) * g_ch_max);
-    
-    return RET_OK;
-}
