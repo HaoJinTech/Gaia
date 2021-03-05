@@ -46,12 +46,12 @@ typedef struct data_type_MCMV
 
 typedef struct data_type_CCMV
 {
-    long data_type; // DATA_TYPE_CCSV
+    long data_type; // data_type_CCMV
     long dest_type;
 
     int32_t offset;
     int32_t ch_lenth;
-    uint32_t *value;
+    int32_t *value;
 }CCMV;
 
 typedef struct data_type_CCSV
@@ -61,18 +61,18 @@ typedef struct data_type_CCSV
 
     int32_t offset;
     int32_t ch_lenth;
-    uint32_t value;
+    int32_t value;
 }CCSV;
 
-typedef struct data_type_CCSV
+typedef struct data_type_CCMMV
 {
-    long data_type; // DATA_TYPE_CCSV
+    long data_type; // DATA_TYPE_CCMMV
     long dest_type;
 
     int32_t offset;
     int32_t ch_lenth;
-    int32_t val_count;  // the count of values that will send at same time, (if ATT & PHA val_count = 2)
-    uint32_t *value;
+    int32_t val_count;  // the count of values that will send at same time, (if ATT & PHA enable, val_count = 2)
+    int32_t *value;
 }CCMMV;
 
 typedef struct protocl_ctrl_msg

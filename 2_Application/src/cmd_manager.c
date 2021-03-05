@@ -97,6 +97,7 @@ LOCAL void *cmd_manager(void *param)
 		APP_DEBUGF(CMD_DEBUG | APP_DBG_LEVEL_SERIOUS , ("msgget failed (%d).\r\n",msq_id));
 		return 0;
     }
+    APP_DEBUGF(CMD_DEBUG | APP_DBG_TRACE , ("start msgrcv ...\r\n"));
     while(1){
         size=msgrcv(msq_id, (void *)&msg,sizeof(CMD_MSG)-sizeof(long),CMD_MSG_TYPE,0);
         if(size < 0){
@@ -133,3 +134,5 @@ LOCAL void check_key_and_find_cmd_entry(CMD_MSG *msg)
     }
     cmd_objs[i].func(msg->recv_buf, msg->dest_fd, msg->send_buf_fun);
 }
+
+

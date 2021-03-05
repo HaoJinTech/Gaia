@@ -1,50 +1,35 @@
 /**
   ******************************************************************************
-  * @file    bll_att.c
+  * @file    bll_calibration.c
   * @author  YORK
   * @version V0.1.0
-  * @date    06-12-2015
+  * @date    03-02-2021
   * @brief   
   *       
 	********** Copyright (C), 2014-2015,HJ technologies **************************
 	*/
 	
 /* Includes ------------------------------------------------------------------*/
-#include "platform.h"
-#include "bll/bll_att.h"
-#include "bll/bll_pha.h"
+#include "bll/bll_calibration.h"
 
-#include <stdlib.h>
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-LOCAL uint32_t g_ch_max = 0;
-LOCAL uint32_t g_val_max = 0;
-LOCAL int32_t *g_pha_vals = 0;
+int32_t cali_enable = 0;
+
 /* Private function prototypes -----------------------------------------------*/
+/* Private functions ----------------------------------------------------------*/
+
 /* Public functions ----------------------------------------------------------*/
-
-int32_t set_pha(uint32_t ch, int32_t val)
+int32_t calibration_proc(uint32_t ch, int32_t att, int32_t pha)
 {
-    // TODO: send att value to DAL layer
-
-    return RET_OK;
+    return pha;
 }
 
-int32_t get_pha(uint32_t ch)
+int32_t init_calibration(json_object *json_obj)
 {
-    if(ch >= g_ch_max )
-        return RET_ERROR;
-   
-    return g_pha_vals[ch];
-}
+    cali_enable = 1;
 
-int32_t init_pha(json_object *json_obj)
-{
-    g_ch_max = 32;
-    g_val_max = 365;
-    g_pha_vals = malloc(sizeof(int32_t) * g_ch_max);
-    
     return RET_OK;
 }

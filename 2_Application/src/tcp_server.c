@@ -233,6 +233,7 @@ LOCAL void listen_loop(uint32_t sock_fd)
         return;
     }
 
+    APP_DEBUGF(TCP_DEBUG | APP_DBG_TRACE , ("start epoll ...\r\n"));
     while (1) {
         ret = epoll_wait(epollfd, eventList, CLI_NUM_MAX, timeout);
 

@@ -36,11 +36,13 @@
 
 void log_dbg_printf(const char *fmt, ...);
 void sys_arch_assert(const char* file, int line);
+void print_hex(const char* data, int data_len);
 #ifdef APP_DEBUG_TO_LOG
 #	define APP_PLATFORM_DIAG(x)	do {log_dbg_printf x;} while(0)
 #	define APP_PLATFORM_ASSERT(x) do {log_dbg_printf(x); assert(0);}while(0)
 #else
 #   define APP_PLATFORM_DIAG(x)	do {printf x;} while(0)
+#   define APP_PLATFORM_DIAG_HEX(x, n) do {print_hex(x, n);} while(0)
 #   define APP_PLATFORM_ASSERT(x) do {rt_kprintf(x); assert(0);}while(0)
 #endif
 #	define APP_PLATFORM_DIAG_USART(x)	do {printf x;} while(0)
@@ -102,6 +104,18 @@ void sys_arch_assert(const char* file, int line);
                                     } \
                                   } while(0)
 
+#define APP_DEBUGF_HEX(debug, message, len) do { \
+                                   if ( \
+                                   ((debug) & APP_DBG_ON) && \
+                                   ((debug) & APP_DBG_TYPES_ON) && \
+                                   ((uint16_t)((debug) & APP_DBG_MASK_LEVEL) >= APP_DBG_MIN_LEVEL)) { \
+                                      APP_PLATFORM_DIAG(("[%s:%s:%d]:\n",__FILE__, __FUNCTION__, __LINE__));\
+                                      APP_PLATFORM_DIAG_HEX(message, len); \
+                                      if ((debug) & APP_DBG_HALT) { \
+                                        while(1); \
+                                      } \
+                                    } \
+                                  } while(0)
 
 #else  /* APP_DEBUG */
 #define APP_DEBUGF(debug, message) 

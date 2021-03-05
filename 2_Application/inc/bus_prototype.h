@@ -45,7 +45,8 @@ typedef struct bus_driver
 /* Exported macro ------------------------------------------------------------*/
 
 /* Exported functions --------------------------------------------------------*/ 
-
+extern BUS_DRIVER bus_drivers[];
+extern uint32_t BUS_DRIVER_NUM;
 
 #endif
 /********************** (C) COPYRIGHT HJ technologies *************************/

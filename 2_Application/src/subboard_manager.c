@@ -53,16 +53,7 @@ LOCAL void *rfboard_manager(void *param);
 LOCAL int32_t subbd_send_data(SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj, void *data);
 LOCAL void do_protocal(SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj, void *data);
 
-/* Public functions ----------------------------------------------------------*/
-int32_t init_rfboard_manager(void)
-{
-    pthread_t	tid;
-
-	pthread_create(&tid, NULL, rfboard_manager, NULL);
-
-    return RET_OK;
-}
-
+/* Private functions ----------------------------------------------------------*/
 LOCAL void *rfboard_manager(void *param)
 {
     SUBBD_MSG msg;
@@ -72,6 +63,7 @@ LOCAL void *rfboard_manager(void *param)
 		APP_DEBUGF(SBBD_DEBUG | APP_DBG_LEVEL_SERIOUS , ("msgget failed (%d).\r\n",msq_id));
 		return 0;
     }
+	APP_DEBUGF(SBBD_DEBUG | APP_DBG_TRACE , ("start msgrcv ...\r\n"));
 
     while(1){
         size=msgrcv(msq_id, (void *)&msg,sizeof(SUBBD_MSG)-sizeof(long),SBBD_MSG_TYPE,0);
@@ -85,7 +77,10 @@ LOCAL void *rfboard_manager(void *param)
 
 LOCAL void do_protocal(SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj, void *data)
 {
-    protocol_obj->write(data);
+	APP_DEBUGF(SBBD_DEBUG | APP_DBG_TRACE , ("send to subboard (protocol:%d)(bus:%d).\r\n", 
+        protocol_obj->protocol_id, bus_obj->bus_id));
+
+    protocol_obj->write(bus_obj, data);
 }
 
 LOCAL int32_t subbd_send_data(SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj, void *data)
@@ -105,6 +100,18 @@ LOCAL int32_t subbd_send_data(SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj,
 
     return RET_OK;
 }
+
+/* Public functions ----------------------------------------------------------*/
+
+int32_t init_rfboard_manager(void)
+{
+    pthread_t	tid;
+
+	pthread_create(&tid, NULL, rfboard_manager, NULL);
+
+    return RET_OK;
+}
+
 
 int32_t subbd_send_FLEX(char dset, SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj, void *value)
 {
@@ -147,7 +154,6 @@ int32_t subbd_send_CCMV(char dset, SUBBD_PROTOCOL *protocol_obj,
     BUS_DRIVER *bus_obj, int32_t ch_offset, int32_t *value, uint32_t ch_lenth)
 {
     CCMV *data = (CCMV *)malloc(sizeof(CCMV));
-    data->channel = channel;
     data->data_type = DATA_TYPE_CCMV;
     data->dest_type = dset;
 
@@ -162,7 +168,6 @@ int32_t subbd_send_CCSV(char dset, SUBBD_PROTOCOL *protocol_obj,
     BUS_DRIVER *bus_obj, int32_t ch_offset, int32_t value, uint32_t ch_lenth)
 {
     CCSV *data = (CCSV *)malloc(sizeof(CCSV));
-    data->channel = channel;
     data->data_type = DATA_TYPE_CCSV;
     data->dest_type = dset;
     
@@ -177,7 +182,6 @@ int32_t subbd_send_CCMMV(char dset, SUBBD_PROTOCOL *protocol_obj,
     BUS_DRIVER *bus_obj, int32_t ch_offset, int32_t *value, int32_t val_count, uint32_t ch_lenth)
 {
     CCMMV *data = (CCMMV *)malloc(sizeof(CCMMV));
-    data->channel = channel;
     data->data_type = DATA_TYPE_CCMMV;
     data->dest_type = dset;
     

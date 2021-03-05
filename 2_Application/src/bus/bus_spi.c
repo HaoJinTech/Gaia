@@ -12,9 +12,12 @@
 /* Includes ------------------------------------------------------------------*/
 #include "platform.h"
 #include "bus_prototype.h"
+#include "app_debug.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 /* Private typedef -----------------------------------------------------------*/
+#define SPI_DEBUG  APP_DBG_ON
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -33,6 +36,8 @@ int32_t bus_spi_open(void)
 
 int32_t bus_spi_write(char *data, uint32_t len)
 {
+ 	APP_DEBUGF(SPI_DEBUG | APP_DBG_TRACE, ("write data lenth: %d\r\n", len));
+  APP_DEBUGF_HEX(SPI_DEBUG | APP_DBG_TRACE, data, len);
   return 0;
 }
 
