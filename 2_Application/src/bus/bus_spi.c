@@ -12,13 +12,13 @@
 /* Includes ------------------------------------------------------------------*/
 #include "platform.h"
 #include "bus_prototype.h"
-<<<<<<< HEAD
+//<<<<<<< HEAD
 #include <stdint.h>
 #include <unistd.h>
-=======
+//=======
 #include "app_debug.h"
 
->>>>>>> a797dff93ddb1dedd994bd30ca253e4fbbf76f80
+//>>>>>>> a797dff93ddb1dedd994bd30ca253e4fbbf76f80
 #include <stdio.h>
 #include <list.h>
 #include <stdlib.h>
@@ -29,16 +29,16 @@
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
 /* Private typedef -----------------------------------------------------------*/
-<<<<<<< HEAD
+//<<<<<<< HEAD
 //需要处理的消息队列
 typedef struct Message_Type{
 	uint16_t MsgId;
 	char* MessageInfo;
 	struct list_head Node;
 };
-=======
+//=======
 #define SPI_DEBUG  APP_DBG_ON
->>>>>>> a797dff93ddb1dedd994bd30ca253e4fbbf76f80
+//>>>>>>> a797dff93ddb1dedd994bd30ca253e4fbbf76f80
 /* Private define ------------------------------------------------------------*/
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #define Empty_Msg_BufferLength 256
@@ -48,7 +48,7 @@ typedef struct Message_Type{
 static const char *device = "/dev/spidev0.0";
 static uint32_t mode;
 static uint8_t bits = 8;
-static uint32_t speed = 10500000;cd 
+static uint32_t speed = 10500000;
 static uint16_t delay;
 static int verbose;
 
@@ -281,7 +281,7 @@ int32_t bus_spi_open(void)
 
 int32_t bus_spi_write(char *data, uint32_t len)
 {
-<<<<<<< HEAD
+//<<<<<<< HEAD
 	
   	return 0;
 }
@@ -313,11 +313,11 @@ char* bus_spi_read(char * msg)
 		strcat(longread, readbf);
 	}
 	return longread;
-=======
+//=======
  	APP_DEBUGF(SPI_DEBUG | APP_DBG_TRACE, ("write data lenth: %d\r\n", len));
   APP_DEBUGF_HEX(SPI_DEBUG | APP_DBG_TRACE, data, len);
   return 0;
->>>>>>> a797dff93ddb1dedd994bd30ca253e4fbbf76f80
+//>>>>>>> a797dff93ddb1dedd994bd30ca253e4fbbf76f80
 }
 
 void *bus_spi_read(int len)
