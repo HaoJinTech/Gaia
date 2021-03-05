@@ -106,31 +106,86 @@ LOCAL int32_t subbd_send_data(SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj,
     return RET_OK;
 }
 
+int32_t subbd_send_FLEX(char dset, SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj, void *value)
+{
+    FLEX *data = (FLEX *)malloc(sizeof(FLEX));
+    data->data_type = DATA_TYPE_FLEX;
+    data->dest_type = dset;
+
+    data->value = value;
+
+    return subbd_send_data(protocol_obj, bus_obj, data);
+}
+
 int32_t subbd_send_SCSV(char dset, SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj, int32_t channel, int32_t value)
 {
     SCSV *data = (SCSV *)malloc(sizeof(SCSV));
     data->channel = channel;
     data->data_type = DATA_TYPE_SCSV;
     data->dest_type = dset;
+
     data->value = value;
 
     return subbd_send_data(protocol_obj, bus_obj, data);
 }
 
 int32_t subbd_send_MCMV(char dset, SUBBD_PROTOCOL *protocol_obj, 
-    BUS_DRIVER *bus_obj, int32_t *channel, int32_t *value, uint32_t lenth)
+    BUS_DRIVER *bus_obj, int32_t *channel, int32_t *value, uint32_t ch_lenth)
 {
+    MCMV *data = (MCMV *)malloc(sizeof(MCMV));
+    data->channel = channel;
+    data->data_type = DATA_TYPE_MCMV;
+    data->dest_type = dset;
 
+    data->value = value;
+    data->ch_lenth = ch_lenth;
+
+    return subbd_send_data(protocol_obj, bus_obj, data);
 }
 
 int32_t subbd_send_CCMV(char dset, SUBBD_PROTOCOL *protocol_obj, 
-    BUS_DRIVER *bus_obj, int32_t ch_offset, int32_t *value, uint32_t lenth)
+    BUS_DRIVER *bus_obj, int32_t ch_offset, int32_t *value, uint32_t ch_lenth)
 {
+    CCMV *data = (CCMV *)malloc(sizeof(CCMV));
+    data->channel = channel;
+    data->data_type = DATA_TYPE_CCMV;
+    data->dest_type = dset;
 
+    data->offset = ch_offset;
+    data->value = value;
+    data->ch_lenth = ch_lenth;
+
+    return subbd_send_data(protocol_obj, bus_obj, data);   
 }
 
 int32_t subbd_send_CCSV(char dset, SUBBD_PROTOCOL *protocol_obj, 
-    BUS_DRIVER *bus_obj, int32_t ch_offset, int32_t value, uint32_t lenth)
+    BUS_DRIVER *bus_obj, int32_t ch_offset, int32_t value, uint32_t ch_lenth)
 {
+    CCSV *data = (CCSV *)malloc(sizeof(CCSV));
+    data->channel = channel;
+    data->data_type = DATA_TYPE_CCSV;
+    data->dest_type = dset;
+    
+    data->offset = ch_offset;
+    data->value = value;
+    data->ch_lenth = ch_lenth;
 
+    return subbd_send_data(protocol_obj, bus_obj, data);   
 }
+
+int32_t subbd_send_CCMMV(char dset, SUBBD_PROTOCOL *protocol_obj, 
+    BUS_DRIVER *bus_obj, int32_t ch_offset, int32_t *value, int32_t val_count, uint32_t ch_lenth)
+{
+    CCMMV *data = (CCMMV *)malloc(sizeof(CCMMV));
+    data->channel = channel;
+    data->data_type = DATA_TYPE_CCMMV;
+    data->dest_type = dset;
+    
+    data->offset = ch_offset;
+    data->value = value;
+    data->ch_lenth = ch_lenth;
+    data->val_count = val_count;
+
+    return subbd_send_data(protocol_obj, bus_obj, data);   
+}
+

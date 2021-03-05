@@ -14,14 +14,21 @@
 #define  _SUBBD_PROTOCOL_H_
 /* Includes ------------------------------------------------------------------*/
 #include "platform.h"
+#include "bus_prototype.h"
 
 /* Exported types ------------------------------------------------------------*/
+typedef struct data_type_FLEX
+{
+    long data_type; // DATA_TYPE_FLEX
+    long dest_type;
 
+    void *value;
+}FLEX;
 
 typedef struct data_type_SCSV
 {
-    char data_type; // DATA_TYPE_SCSV
-    char dest_type;
+    long data_type; // DATA_TYPE_SCSV
+    long dest_type;
 
     int32_t channel;
     int32_t value;
@@ -29,41 +36,44 @@ typedef struct data_type_SCSV
 
 typedef struct data_type_MCMV
 {
-    char data_type; // DATA_TYPE_MCMV
-    char dest_type;
+    long data_type; // DATA_TYPE_MCMV
+    long dest_type;
 
     int32_t *channel;
     int32_t *value;
-    uint32_t lenth;
+    uint32_t ch_lenth;
 }MCMV;
 
 typedef struct data_type_CCMV
 {
-    char data_type; // DATA_TYPE_CCSV
-    char dest_type;
+    long data_type; // DATA_TYPE_CCSV
+    long dest_type;
 
     int32_t offset;
-    int32_t lenth;
+    int32_t ch_lenth;
     uint32_t *value;
 }CCMV;
 
 typedef struct data_type_CCSV
 {
-    char data_type; // DATA_TYPE_CCSV
-    char dest_type;
+    long data_type; // DATA_TYPE_CCSV
+    long dest_type;
 
     int32_t offset;
-    int32_t lenth;
+    int32_t ch_lenth;
     uint32_t value;
 }CCSV;
 
-typedef struct data_type_FLEX
+typedef struct data_type_CCSV
 {
-    char data_type; // DATA_TYPE_FLEX
-    char dest_type;
+    long data_type; // DATA_TYPE_CCSV
+    long dest_type;
 
-    void *data;
-}FLEX;
+    int32_t offset;
+    int32_t ch_lenth;
+    int32_t val_count;  // the count of values that will send at same time, (if ATT & PHA val_count = 2)
+    uint32_t *value;
+}CCMMV;
 
 typedef struct protocl_ctrl_msg
 {
@@ -73,8 +83,8 @@ typedef struct protocl_ctrl_msg
 
 typedef int32_t (*subbd_protocol_init)(void *param);
 typedef int32_t (*subbd_protocol_open)(void *param);
-typedef int32_t (*subbd_protocol_write)(void *data);
-typedef void *(*subbd_protocol_read)(int len);
+typedef int32_t (*subbd_protocol_write)(BUS_DRIVER *bus, void *data);
+typedef void *(*subbd_protocol_read)(BUS_DRIVER *bus, int len);
 typedef int32_t (*subbd_protocol_ioctrl)(PROTOCL_CTRL_MSG *ctrl);
 typedef int32_t (*subbd_protocol_close)(void *param);
 
