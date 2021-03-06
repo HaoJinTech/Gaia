@@ -14,7 +14,7 @@
 
 #include "stdint.h"
 
-#define SYS_CONFIG_PATH   "./gaia.conf"
+#define SYS_CONFIG_PATH   "./sysconf.json"
 #define CLI_NUM_MAX        64
 #define SERVER_PORT_DEF    50000
 

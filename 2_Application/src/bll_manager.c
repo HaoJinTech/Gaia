@@ -18,18 +18,38 @@
 #include "sys_config.h"
 
 /* Private typedef -----------------------------------------------------------*/
+typedef int32_t (*INIT_OBJ)(json_object *json_obj);
+
+typedef struct bll_objects{
+    char      *obj_name;
+    INIT_OBJ   init_fun;
+}BLL_OBJ;
+
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
+BLL_OBJ bll_objs[] ={
+    {"ATT", init_att},
+    {"PHA", init_pha},
+    {"CALIBRATION", init_calibration}
+};
+uint32_t BLL_OBJ_SIZE = sizeof(bll_objs) / sizeof(BLL_OBJ);
+
 /* Private function prototypes -----------------------------------------------*/
 LOCAL int32_t bll_assembly(void);
 /* Private functions ----------------------------------------------------------*/
 
 LOCAL int32_t bll_assembly(void)
 {
-    init_att(pobj);
-    init_pha(pobj);
-    init_calibration(pobj);
+    int i=0;
+    json_object *obj = 0;
+
+    for(i=0; i< BLL_OBJ_SIZE; i++){
+        obj = json_object_object_get(config_json_obj, bll_objs[i].obj_name);
+        if(obj) {
+            bll_objs[i].init_fun(obj);            
+        }
+    }
 
     return RET_OK;
 }

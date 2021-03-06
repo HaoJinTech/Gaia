@@ -74,16 +74,29 @@ int32_t get_att(uint32_t ch)
     return g_att_vals[ch];
 }
 
-int32_t init_att(json_object *json_obj)
+int32_t init_att(json_object *att_obj)
 {
     int i=0;
-    g_ch_max = 32;
-    g_val_max = 440;
-    g_att_vals = (int32_t*)malloc(sizeof(int32_t) * g_ch_max);
-    g_protocol_obj = &protocols[PROTOCOL_ID_RR485];
-    g_bus_obj = &bus_drivers[BUS_ID_SPI];
-    g_logic_step = 2;
-    g_bd_step = 2;
+    int protocol_id = 0;
+    int bus_id = 0;
+
+    if(!att_obj)
+        return RET_ERROR;
+
+    g_ch_max =      config_get_int(att_obj, "ATT_MAX_CH", 8);
+    g_val_max =     config_get_int(att_obj, "ATT_MAX_VAL", 110);
+    g_logic_step =  config_get_int(att_obj, "ATT_LOGIC_STEP", 2);
+    g_bd_step =     config_get_int(att_obj, "ATT_BD_STEP", 2);
+
+    protocol_id =   config_get_int(att_obj, "ATT_PROTOCOL", PROTOCOL_ID_RR485);
+    if(protocol_id > SUBBD_PROTOCOL_SIZE) protocol_id = PROTOCOL_ID_RR485;
+    g_protocol_obj = &protocols[protocol_id];
+
+    bus_id =        config_get_int(att_obj, "ATT_BUS", BUS_ID_SPI);
+    if(bus_id > BUS_DRIVER_NUM) bus_id = BUS_ID_SPI;
+    g_bus_obj =     &bus_drivers[bus_id];
+
+    g_att_vals =    (int32_t*)malloc(sizeof(int32_t) * g_ch_max);
 
     for(i=0; i<g_ch_max; i++) {
         g_att_vals[i] = 0;

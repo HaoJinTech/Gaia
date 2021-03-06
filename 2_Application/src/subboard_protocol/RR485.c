@@ -194,6 +194,7 @@ LOCAL int32_t radio_rack_485_write(BUS_DRIVER *bus, void *data)
       break;
   }
 
+  free(buf);
   free(data);
 
   return RET_OK;

@@ -184,7 +184,7 @@ int32_t subbd_send_CCMMV(char dset, SUBBD_PROTOCOL *protocol_obj,
     CCMMV *data = (CCMMV *)malloc(sizeof(CCMMV));
     data->data_type = DATA_TYPE_CCMMV;
     data->dest_type = dset;
-    
+
     data->offset = ch_offset;
     data->value = value;
     data->ch_lenth = ch_lenth;
