@@ -56,14 +56,13 @@ const int PORT = SERVER_PORT_DEF;
 TCP_SOCK_BUFS rx_buf_list_root;
 
 /* Private function prototypes -----------------------------------------------*/
-LOCAL void listen_loop();
+LOCAL void listen_loop(uint32_t sock_fd);
 LOCAL void accept_conn(uint32_t sock_fd, uint32_t epollfd);
 LOCAL int32_t recv_message(uint32_t sock_fd);
 LOCAL int32_t send_message(uint32_t dest_fd, char *buf, uint32_t len);
 LOCAL uint32_t init_rx_buffer(uint32_t accept_fd);
 LOCAL TCP_SOCK_BUFS *fd2rxbuf(uint32_t sock_fd);
 LOCAL void close_sock(uint32_t sock_fd);
-
 
 /* Public functions ---------------------------------------------------------*/
 int tcp_server_init(void) {
