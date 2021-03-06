@@ -20,7 +20,7 @@
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 #define CONF_DEBUG        APP_DBG_ON
-#define SYS_CONFIG_NAME   "sysconf.json"
+#define SYS_CONFIG_NAME   "/sysconf.json"
 
 #define SYS_CONF_PATH_LEN 128
 /* Private macro -------------------------------------------------------------*/
@@ -41,13 +41,7 @@ void config_init(void)
   if(!config_json_obj){
     APP_DEBUGF(CONF_DEBUG | APP_DBG_LEVEL_WARNING, ("json error: %s", json_util_get_last_err()));
   }
-/*
-  json_object *testobj = json_object_new_object();
-  json_object *obj = json_object_new_object();
-  json_object_object_add(testobj, "ATT", obj);
-  json_object_object_add(obj, "ATT_MAX_CH", json_object_new_int(2048));
-  json_object_to_file("./new.json", testobj);
-  */
+
 }
 
 const char* config_get_string(json_object *obj_base, char *key, const char *defval)

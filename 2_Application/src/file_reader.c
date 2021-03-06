@@ -81,10 +81,11 @@ void csv_cal_read_file(const char *filename, File_reader file_reader, void *dest
 
 /*	mkdir(RELATIVE_FILE_PATH, O_CREAT);*/
 	snprintf(full_path, FILE_FULL_PATH_SIZE, "%s/%s", PRJ_FILE_PATH, filename);
-	fd = open(full_path, O_RDONLY | O_CREAT, 0);
+	APP_DEBUGF(FILEREADER_DEBUG | APP_DBG_TRACE, ("open file: %s\r\n", full_path));
+	fd = open(full_path, O_RDONLY, 0);
 	if(fd<0){
 		APP_DEBUGF(FILEREADER_DEBUG | APP_DBG_LEVEL_WARNING | APP_DBG_TRACE,
-		    ("csv_cal_read_file: open file failed.\r\n"));
+		    ("open file failed.\r\n"));
 		return;
 	}
 	line = get_file_row(fd);

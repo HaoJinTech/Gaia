@@ -127,8 +127,6 @@ LOCAL void get_pha_cal_data(struct rb *rb, struct Cal_info *cal_info, uint16_t l
 	while(1){
 		buf = (char *)rb_getline(rb, "\r\n", 2, &read_size);
 		if(!buf){
-			APP_DEBUGF(CALI_DEBUG | APP_DBG_TRACE,
-			("round buffer read complite.\r\n"));
 			break;
 		}
 
@@ -253,7 +251,7 @@ int32_t init_calibration(json_object *cali_obj)
 			strncpy(full_path, relative_path, FILE_PATH_LEN);
 			strncat(full_path, filename, FILE_PATH_LEN - strlen(relative_path));
 			APP_DEBUGF(CALI_DEBUG | APP_DBG_TRACE, ("load file:(%s).\r\n", full_path));
-			csv_cal_read_file(filename, (File_reader)get_pha_cal_data, cal_info);
+			csv_cal_read_file(full_path, (File_reader)get_pha_cal_data, cal_info);
 		}
 
 		flag = config_get_bool(array_obj, "ADJ_PHA_BY_STRETCH", 0);
@@ -263,7 +261,7 @@ int32_t init_calibration(json_object *cali_obj)
 			strncpy(full_path, relative_path, FILE_PATH_LEN);
 			strncat(full_path, filename, FILE_PATH_LEN - strlen(relative_path));
 			APP_DEBUGF(CALI_DEBUG | APP_DBG_TRACE, ("load file:(%s).\r\n", full_path));
-			csv_cal_read_file(filename, (File_reader)get_pha_stretch_data, cal_info);
+			csv_cal_read_file(full_path, (File_reader)get_pha_stretch_data, cal_info);
 		}
 
 		// set calibration point name

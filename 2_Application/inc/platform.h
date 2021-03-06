@@ -14,7 +14,7 @@
 
 #include "stdint.h"
 
-#define PRJ_FILE_PATH  "./prj_files/" 
+#define PRJ_FILE_PATH  "./prj_files" 
 #define CLI_NUM_MAX         64
 #define SERVER_PORT_DEF     50000
 
