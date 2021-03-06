@@ -38,7 +38,8 @@ typedef struct Message_Type{
 #define ENDLINE {255, 255, 0}
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-static const char *device = "/dev/spidev0.0";
+#define DEVICE_NAME_LENTH  64
+static const char device[DEVICE_NAME_LENTH] = "/dev/spidev0.0";
 static uint32_t mode;
 static uint8_t bits = 8;
 static uint32_t speed = 10500000;
@@ -138,7 +139,7 @@ static void transfer(int fd, uint8_t const *tx, uint8_t const *rx, size_t len)
  
 	ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
 	if (ret < 1)
-		pabort("can't send spi message");
+		;//pabort("can't send spi message");
  
 	if (verbose)
 		hex_dump(tx, len, 32, "TX");
@@ -167,6 +168,7 @@ static void print_usage(const char *prog)
 	exit(1);
 }
 //根据参数配置
+#if 0
 static void parse_opts(int argc, char *argv[])
 {
 	while (1) {
@@ -256,10 +258,11 @@ static void parse_opts(int argc, char *argv[])
 			mode |= SPI_RX_QUAD;
 	}
 }
+#endif
 /* Public functions ----------------------------------------------------------*/
 int32_t bus_spi_init(uint32_t port, uint32_t freq, void *other)
 {
-	device = "/dev/spidev0." + itoa(port);
+	snprintf( device, DEVICE_NAME_LENTH, "/dev/spidev0.%d", port);
 	speed = freq;
 	memset(empty, 0, Empty_Msg_BufferLength);
   	return RET_OK;
@@ -275,7 +278,7 @@ int32_t bus_spi_open(void)
 {
 	fd = open(device, O_RDWR);
 		if (fd < 0)
-			pabort("can't open device");
+			;//pabort("can't open device");
   	return RET_OK;
 }
 

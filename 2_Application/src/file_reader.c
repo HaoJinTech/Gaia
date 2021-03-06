@@ -12,6 +12,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "file_reader.h"
 #include "app_debug.h"
+#include "platform.h"
+
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -22,7 +24,7 @@
 
 #define FILE_FULL_PATH_SIZE     128
 #define FILE_BUFFER_SIZE        512
-#define RELATIVE_FILE_PATH      "./prj_file/" 
+
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -78,7 +80,7 @@ void csv_cal_read_file(const char *filename, File_reader file_reader, void *dest
     APP_ASSERT("cal_info == NULL.\r\n", dest_obj);
 
 /*	mkdir(RELATIVE_FILE_PATH, O_CREAT);*/
-	snprintf(full_path, FILE_FULL_PATH_SIZE, "%s/%s", RELATIVE_FILE_PATH, filename);
+	snprintf(full_path, FILE_FULL_PATH_SIZE, "%s/%s", PRJ_FILE_PATH, filename);
 	fd = open(full_path, O_RDONLY | O_CREAT, 0);
 	if(fd<0){
 		APP_DEBUGF(FILEREADER_DEBUG | APP_DBG_LEVEL_WARNING | APP_DBG_TRACE,

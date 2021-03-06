@@ -15,9 +15,14 @@
 #include "platform.h"
 #include "app_debug.h"
 
+#include <string.h>
+
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define CONF_DEBUG                      APP_DBG_ON
+#define CONF_DEBUG        APP_DBG_ON
+#define SYS_CONFIG_NAME   "sysconf.json"
+
+#define SYS_CONF_PATH_LEN 128
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 json_object *config_json_obj = 0;
@@ -27,7 +32,12 @@ json_object *config_json_obj = 0;
 
 void config_init(void)
 {
-  config_json_obj = json_object_from_file(SYS_CONFIG_PATH);
+  char full_path[SYS_CONF_PATH_LEN];
+
+  strncpy(full_path, PRJ_FILE_PATH, SYS_CONF_PATH_LEN );
+  strncat(full_path, SYS_CONFIG_NAME, SYS_CONF_PATH_LEN - strlen(PRJ_FILE_PATH));
+
+  config_json_obj = json_object_from_file(full_path);
   if(!config_json_obj){
     APP_DEBUGF(CONF_DEBUG | APP_DBG_LEVEL_WARNING, ("json error: %s", json_util_get_last_err()));
   }
@@ -105,10 +115,11 @@ json_object *config_get_array_obj(json_object *obj_base, char *key, int index)
   return json_object_array_get_idx(array_obj, index);
 }
 
-const char *config_get_array_string(json_object *obj_base, char *key, int index, const char *defval)
+#if 0
+const char *config_get_array_string(json_object *obj_base, char *arr_key, int index, const char *defval)
 {
   const char *val;
-  json_object *obj = config_get_array_obj(obj_base, key, index);
+  json_object *obj = config_get_array_obj(obj_base, arr_key, index);
 
   if(!obj) val = defval;
   val = json_object_get_string(obj);
@@ -140,3 +151,4 @@ int config_get_array_bool(json_object *obj_base, char *key, int index, int defva
   APP_DEBUGF(CONF_DEBUG | APP_DBG_TRACE , ("%s[%d] : %d \r\n", key, index, val));
   return val;
 }
+#endif

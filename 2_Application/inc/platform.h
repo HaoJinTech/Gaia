@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    user_config.h
+  * @file    platform.h
   * @author  YORK
   * @version V0.1.0
   * @date    02-28-2021
@@ -14,9 +14,9 @@
 
 #include "stdint.h"
 
-#define SYS_CONFIG_PATH   "./sysconf.json"
-#define CLI_NUM_MAX        64
-#define SERVER_PORT_DEF    50000
+#define PRJ_FILE_PATH  "./prj_files/" 
+#define CLI_NUM_MAX         64
+#define SERVER_PORT_DEF     50000
 
 /* PROTOCLOL ID */
 #define PROTOCOL_ID_RR485       0
