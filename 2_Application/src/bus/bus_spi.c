@@ -12,13 +12,9 @@
 /* Includes ------------------------------------------------------------------*/
 #include "platform.h"
 #include "bus_prototype.h"
-//<<<<<<< HEAD
 #include <stdint.h>
 #include <unistd.h>
-//=======
 #include "app_debug.h"
-
-//>>>>>>> a797dff93ddb1dedd994bd30ca253e4fbbf76f80
 #include <stdio.h>
 #include <list.h>
 #include <stdlib.h>
@@ -29,19 +25,16 @@
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
 /* Private typedef -----------------------------------------------------------*/
-//<<<<<<< HEAD
 //需要处理的消息队列
 typedef struct Message_Type{
 	uint16_t MsgId;
 	char* MessageInfo;
 	struct list_head Node;
 };
-//=======
 #define SPI_DEBUG  APP_DBG_ON
-//>>>>>>> a797dff93ddb1dedd994bd30ca253e4fbbf76f80
 /* Private define ------------------------------------------------------------*/
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
-#define Empty_Msg_BufferLength 256
+#define Empty_Msg_BufferLength 8
 #define ENDLINE {255, 255, 0}
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -51,6 +44,7 @@ static uint8_t bits = 8;
 static uint32_t speed = 10500000;
 static uint16_t delay;
 static int verbose;
+static char empty[Empty_Msg_BufferLength];
 
 struct list_head MessageQueueList;
 
@@ -263,13 +257,19 @@ static void parse_opts(int argc, char *argv[])
 	}
 }
 /* Public functions ----------------------------------------------------------*/
-
-int32_t bus_spi_init(int argc, char *argv[])
+int32_t bus_spi_init(uint32_t port, uint32_t freq, void *other)
+{
+	device = "/dev/spidev0." + itoa(port);
+	speed = freq;
+	memset(empty, 0, Empty_Msg_BufferLength);
+  	return RET_OK;
+}
+/* int32_t bus_spi_init(int argc, char *argv[])
 {
   parse_opts(argc, argv);
   INIT_LIST_HEAD(&MessageQueueList);
   return RET_OK;
-}
+} */
 
 int32_t bus_spi_open(void)
 {
@@ -282,22 +282,22 @@ int32_t bus_spi_open(void)
 int32_t bus_spi_write(char *data, uint32_t len)
 {
 //<<<<<<< HEAD
-	
-  	return 0;
+	char *readbuff;
+	transfer(fd, &data, readbuff, sizeof(&data));
+	return 0;
 }
 
-int32_t bus_spi_write(struct Message_Type *msg, uint32_t len)
+/* int32_t bus_spi_write(struct Message_Type *msg, uint32_t len)
 {
 	list_add_tail(&msg->Node, &MessageQueueList);
 	char *readbuff;
 	transfer(fd, &msg->MessageInfo, readbuff, sizeof(&msg->MessageInfo));
-	
 	//处理readbuff
 
   	return 0;
-}
+} */
 
-char* bus_spi_read(char * msg)
+/* char* bus_spi_read(char * msg)
 {
 	char *readbf = msg;
 	char *longread = "";
@@ -318,17 +318,17 @@ char* bus_spi_read(char * msg)
   APP_DEBUGF_HEX(SPI_DEBUG | APP_DBG_TRACE, data, len);
   return 0;
 //>>>>>>> a797dff93ddb1dedd994bd30ca253e4fbbf76f80
-}
+} */
 
-void *bus_spi_read(int len)
+void *bus_spi_read(char *buff, int len)
 {
-
-	return 0;
+	transfer(fd, empty, buff, len);
+	return buff;
 }
 
 int32_t bus_spi_ioctrl(BUS_CTRL_MSG *msg)
 {
-  
+	
 	return RET_OK;
 }
 
