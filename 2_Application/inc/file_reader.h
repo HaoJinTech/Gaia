@@ -1,29 +1,28 @@
 /**
   ******************************************************************************
-  * @file    bll_pha.h
+  * @file    file_reader.c
   * @author  YORK
   * @version V0.1.0
-  * @date    06-12-2015
+  * @date    03-03-2021
   * @brief   
   *
 	********** Copyright (C), 2014-2015,HJ technologies **************************
 	*/
 	
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef  _BLL_PHA_H_
-#define  _BLL_PHA_H_
+#ifndef  _FILE_READER_H_
+#define  _FILE_READER_H_
 /* Includes ------------------------------------------------------------------*/
 #include "platform.h"
-#include "sys_config.h"
+#include "rbuffer.h"
 
 /* Exported types ------------------------------------------------------------*/
+typedef void (*File_reader)(struct rb *rb, void *dest_obj, uint32_t line);
+
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/ 
-int32_t set_pha(uint32_t ch, int32_t val);
-int32_t get_pha(uint32_t ch);
-int32_t get_pha_ch_max(void);
+void csv_cal_read_file(const char *filename, File_reader file_reader, void *dest_obj);
 
-int32_t init_pha(json_object *json_obj);
 #endif
 /********************** (C) COPYRIGHT HJ technologies *************************/

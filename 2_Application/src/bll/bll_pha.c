@@ -24,6 +24,10 @@ LOCAL uint32_t g_val_max = 0;
 LOCAL int32_t *g_pha_vals = 0;
 /* Private function prototypes -----------------------------------------------*/
 /* Public functions ----------------------------------------------------------*/
+int32_t get_pha_ch_max()
+{
+    return g_ch_max;
+}
 
 int32_t set_pha(uint32_t ch, int32_t val)
 {

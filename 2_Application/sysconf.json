@@ -22,8 +22,27 @@
     },
 
     "CALIBRATION": {
-        "ADJ_PHA_BY_ATT": true,
-        "ADJ_PHA_BY_TABLE": true,
-        "ADJ_PHA_BY_STRETCH": true
+        "CALI_OBJS": [
+            {
+                "NAME": "2G6",
+                "ADJ_PHA_BY_ATT": true,
+                "ADJ_PHA_BY_ATT_FILE": "2G6_inf.csv",
+                "ADJ_PHA_BY_TABLE": true,
+                "ADJ_PHA_BY_TABLE_FILE": "2G6_pha.csv",
+                "ADJ_PHA_BY_STRETCH": true,
+                "ADJ_PHA_BY_STRETCH_POINT": 6,
+                "ADJ_PHA_BY_STRETCH_FILE": "2G6_stretch.csv"
+            },
+            {
+                "NAME": "3G5",
+                "ADJ_PHA_BY_ATT": true,
+                "ADJ_PHA_BY_ATT_FILE": "3G5_inf.csv",
+                "ADJ_PHA_BY_TABLE": true,
+                "ADJ_PHA_BY_TABLE_FILE": "3G5_pha.csv",
+                "ADJ_PHA_BY_STRETCH": true,
+                "ADJ_PHA_BY_STRETCH_POINT": 6,
+                "ADJ_PHA_BY_STRETCH_FILE": "3G5_stretch.csv"
+            }
+        ]
     }
 }

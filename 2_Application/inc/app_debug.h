@@ -43,7 +43,7 @@ void print_hex(const char* data, int data_len);
 #else
 #   define APP_PLATFORM_DIAG(x)	do {printf x;} while(0)
 #   define APP_PLATFORM_DIAG_HEX(x, n) do {print_hex(x, n);} while(0)
-#   define APP_PLATFORM_ASSERT(x) do {rt_kprintf(x); assert(0);}while(0)
+#   define APP_PLATFORM_ASSERT(x) do {printf(x); assert(0);}while(0)
 #endif
 #	define APP_PLATFORM_DIAG_USART(x)	do {printf x;} while(0)
 /** lower two bits indicate debug level
@@ -74,9 +74,8 @@ void print_hex(const char* data, int data_len);
 #define APP_DBG_HALT          0x08U
 
 #ifdef APP_ASSERT_ENABLE
-/*#define APP_ASSERT(message, assertion) do { if(!(assertion)) \
-  APP_PLATFORM_ASSERT(message); } while(0)*/
-#define APP_ASSERT(assertion) assert(assertion)
+#define APP_ASSERT(message, assertion) do { if(!(assertion)) \
+  APP_PLATFORM_ASSERT(message); } while(0)
 #else
 #define APP_ASSERT(assertion) 
 #endif

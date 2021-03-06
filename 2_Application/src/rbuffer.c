@@ -67,7 +67,7 @@ struct rb * rb_malloc(char *name, uint16_t size, uint32_t buffer_max_size)
   */
 void rb_init(struct rb* rb, char *pool, uint16_t size)
 {
-	APP_ASSERT(rb);
+	APP_ASSERT("rb == NULL",rb);
 
 	rb->read_index = rb->write_index = 0;
 
@@ -85,7 +85,7 @@ uint32_t rb_remalloc(struct rb* prb)
 		return 0;
 	length = prb->buffer_size + RB_ADDITION_SIZE>RB_MAX_SIZE ? RB_MAX_SIZE:prb->buffer_size + RB_ADDITION_SIZE;
 	pdata = (char*)malloc(length);
-    APP_ASSERT(pdata);
+    APP_ASSERT("pdata == NULL", pdata);
 
 	length = rb_lenth(prb);
 	rb_get(prb, pdata, length);
