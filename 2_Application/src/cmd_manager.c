@@ -17,6 +17,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/msg.h>
@@ -49,6 +50,69 @@ int32_t init_cmd_manager(void)
 
 	pthread_create(&tid, NULL, cmd_manager, NULL);
 
+    return RET_OK;
+}
+
+int32_t cmd_obj_get_int(CMD_PARSE_OBJ *obj, uint32_t index)
+{
+    if(index >= obj->num)
+        return 0;
+    return atoi(obj->words[index]);
+}
+
+CMD_PARSE_OBJ *parse_cmd(char *str, char *tok)
+{
+    CMD_PARSE_OBJ *obj = NULL;
+    char *inner_ptr=NULL;
+    char *str_iter = str;
+    int i=0, word_num = 0;
+
+    if(!str || !tok)
+        return NULL;
+    
+    // check how many tok it has
+    while(str_iter[i]){
+        if(tok[0] == str_iter[i]){
+            word_num++;
+        }
+        i++;
+    }
+
+    // remove the \r\n token
+    if(str_iter[i-1] == '\r' || str_iter[i-1] == '\n'){
+        str_iter[i-1] = 0;
+    }
+    if(str_iter[i-2] == '\r' || str_iter[i-2] == '\n'){
+        str_iter[i-2] = 0;
+    }
+
+    word_num++; // last word
+    APP_DEBUGF(CMD_DEBUG | APP_DBG_TRACE , ("word num (%d).\r\n",word_num));
+    
+    obj = (CMD_PARSE_OBJ*)malloc(sizeof(CMD_PARSE_OBJ));
+    obj->words = (char**)malloc(sizeof(char*) * word_num);
+    obj->num = word_num;
+
+    i =0;
+    obj->words[i] = strtok_r((char *)str_iter, tok, &inner_ptr);
+    do{
+        i++; 
+        obj->words[i] = strtok_r(NULL, tok, &inner_ptr);
+        APP_DEBUGF(CMD_DEBUG | APP_DBG_TRACE , 
+            ("parse word [%d](%s).\r\n",i,obj->words[i]));
+    }while(i < word_num-1);
+    
+    return obj;
+}
+
+int32_t free_cmd_obj(CMD_PARSE_OBJ *obj)
+{
+    if(obj){
+        if(obj->words){
+            free(obj->words);
+        }
+        free(obj);
+    }
     return RET_OK;
 }
 

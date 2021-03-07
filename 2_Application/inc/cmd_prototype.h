@@ -19,9 +19,6 @@
 #include "list.h"
 
 /* Exported types ------------------------------------------------------------*/
-#define KEY_SIZE			32
-#define DESC_SIZE			128
-
 typedef void (*cmdscall_func)(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun);
 
 typedef struct cmd_obj
@@ -30,8 +27,21 @@ typedef struct cmd_obj
 	char    *desc;		/* describe the function */ 
 	cmdscall_func func;		/* the function address of system call */
 }CMD_OBJ;
+
+typedef struct cmd_parse_obj{
+    char **words;
+    uint32_t num;
+} CMD_PARSE_OBJ;
+
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
+#define KEY_SIZE			32
+#define DESC_SIZE			128
+#define CMD_TOK       " "
+
 /* Exported functions --------------------------------------------------------*/ 
+CMD_PARSE_OBJ *parse_cmd(char *str, char *tok);
+int32_t free_cmd_obj(CMD_PARSE_OBJ *obj);
+int32_t cmd_obj_get_int(CMD_PARSE_OBJ *obj, uint32_t index);
 
 #endif
