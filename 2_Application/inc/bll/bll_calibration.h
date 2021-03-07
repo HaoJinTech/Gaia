@@ -19,10 +19,11 @@
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
-extern int32_t cali_enable;
-
 /* Exported functions --------------------------------------------------------*/ 
+int32_t calibration_is_enabled(void);
 int32_t calibration_proc(uint32_t ch, int32_t att, int32_t pha);
 int32_t init_calibration(json_object *json_obj);
+void save_cscd_file(void);
+
 #endif
 /********************** (C) COPYRIGHT HJ technologies *************************/

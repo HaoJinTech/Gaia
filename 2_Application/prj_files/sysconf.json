@@ -25,6 +25,8 @@
 
     "CALIBRATION": {
         "CALI_FOLDER_PATH": "Calibration/",
+        "CALI_OFFSET_FILE": "pha_offset.csv",
+        "CALI_SAVED_POINTS_FILE": "pha_freq.csv",
         "CALI_OBJS": [
             {
                 "NAME": "2G6",

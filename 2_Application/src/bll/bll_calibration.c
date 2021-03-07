@@ -17,7 +17,10 @@
 #include "platform.h"
 #include "app_debug.h"
 #include "file_reader.h"
+
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 /* Private typedef -----------------------------------------------------------*/
 struct Cal_info{
@@ -48,18 +51,27 @@ struct Cal_info{
 int32_t cali_enable = 0;
 
 LOCAL struct Cal_info cal_info_root;
-LOCAL uint32_t stretch_point =0;
-uint8_t 			*scal_id = NULL;					// the calibration object index of every channel
-int16_t				*scal_offset = NULL;
-uint8_t				s_att_effect = 0;					// effect by att
-uint8_t				s_pha_by_table_enable = 0;			// enable table calibration
-uint8_t				s_stretch_enable = 0;
+LOCAL uint8_t 			*scal_id = NULL;					// the calibration object index of every channel
+LOCAL int16_t			*scal_offset = NULL;
+LOCAL uint8_t			s_att_effect = 0;					// is effect by att
+LOCAL uint8_t			s_pha_by_table_enable = 0;			// is effect by table calibration
+LOCAL uint8_t			s_stretch_enable = 0;				// is effect by stretch
+LOCAL uint32_t 			stretch_point =0;
+LOCAL const char		*cali_pt_filename = 0;
+LOCAL const char 		*relative_path = 0;
 
 /* Private function prototypes -----------------------------------------------*/
+// File reader call back function 
 LOCAL void get_inf_cal_data(struct rb *rb, struct Cal_info *cal_info, uint16_t line);
 LOCAL void get_pha_cal_data(struct rb *rb, struct Cal_info *cal_info, uint16_t line);
 LOCAL void get_pha_stretch_data(struct rb *rb, struct Cal_info *cal_info, uint16_t line);
+LOCAL void get_offset_data(struct rb *rb, struct Cal_info *cal_info, uint16_t line);
+LOCAL void get_freq_data(struct rb *rb, struct Cal_info *cal_info, uint16_t line);
+
 LOCAL int16_t calc_remainder(int16_t num, uint16_t rem);
+LOCAL struct Cal_info *get_cal_info_by_iter(uint16_t i);
+LOCAL uint8_t getMapPosition(struct Cal_info *cal_info, int32_t val);
+LOCAL int16_t cal_info_id2iter(char *id);
 
 /* Private functions ---------------------------------------------------------*/
 // att inf pha cal data.
@@ -166,15 +178,15 @@ LOCAL void get_pha_stretch_data(struct rb *rb, struct Cal_info *cal_info, uint16
 	uint32_t read_size;
 	int i =0;
 
-	APP_ASSERT("get_offset_data: rb == NULL\r\n", rb);
-	APP_ASSERT("get_offset_data: cal_info == NULL\r\n", cal_info);
+	APP_ASSERT(" rb == NULL\r\n", rb);
+	APP_ASSERT(" cal_info == NULL\r\n", cal_info);
 
 	if(cal_info->stretch == NULL){
 		cal_info->stretch = (int16_t*)malloc(get_pha_ch_max() * sizeof(int16_t) * (stretch_point+1));
 	}
 	if(!cal_info->stretch){
 		APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_SERIOUS | APP_DBG_TRACE,
-		("get_offset_data: cal_info->stretch out of memory.\r\n"));
+			(" cal_info->stretch out of memory.\r\n"));
 		return;
 	}
 	while(1){
@@ -185,7 +197,7 @@ LOCAL void get_pha_stretch_data(struct rb *rb, struct Cal_info *cal_info, uint16
 		c_ch = strtok_r((char *)buf, ",", &inner_ptr);
 		if(!c_ch){
 			APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_SERIOUS | APP_DBG_TRACE,
-			("get_offset_data: file format error.\r\n"));
+				(" file format error.\r\n"));
 			free(buf);
 			return;
 		}
@@ -199,7 +211,7 @@ LOCAL void get_pha_stretch_data(struct rb *rb, struct Cal_info *cal_info, uint16
 			
 			if(!c_val){
 				APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_SERIOUS | APP_DBG_TRACE,
-				("get_offset_data: file format error.\r\n"));
+					(" file format error.\r\n"));
 				free(buf);
 				return;
 			}
@@ -241,7 +253,7 @@ LOCAL int16_t calc_remainder(int16_t num, uint16_t rem)
 	return temp_num % rem;
 }
 
-uint8_t getMapPosition(struct Cal_info *cal_info, int32_t val)
+LOCAL uint8_t getMapPosition(struct Cal_info *cal_info, int32_t val)
 {
 	uint8_t i=0;
 	for(i=0; i<stretch_point; i++){
@@ -251,12 +263,109 @@ uint8_t getMapPosition(struct Cal_info *cal_info, int32_t val)
 	return 0;
 }
 
+LOCAL int16_t cal_info_id2iter(char *id)
+{
+	uint16_t count = 0;
+	struct Cal_info *iter;
+
+    list_for_each_entry(iter, &cal_info_root.list, list){
+		if(0== strncmp(id, iter->cal_id, strlen(iter->cal_id))){
+            return count;
+		}
+		count++;
+    }
+	return -1;
+}
+
+LOCAL void get_freq_data(struct rb *rb, struct Cal_info *cal_info, uint16_t line)
+{
+	char *inner_ptr = NULL; 
+	char *buf;
+	char *c_ch, *c_val;
+	int16_t ch,val;
+	uint32_t read_size;
+
+	APP_ASSERT("rb == NULL or scal_id == NULL\r\n", rb && scal_id);
+	
+	while(1){
+		buf = (char *)rb_getline(rb, "\r\n", 2, &read_size);
+		if(!buf){
+			break;
+		}
+		c_ch = strtok_r((char *)buf, ",", &inner_ptr);
+		if(!c_ch){
+			APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_SERIOUS,
+				("file format error.\r\n"));
+			free(buf);
+			return;
+		}
+		c_val = strtok_r(NULL, "\r", &inner_ptr);
+		if(!c_val){
+			APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_SERIOUS,
+				("file format error.\r\n"));
+			free(buf);
+			return;
+		}
+		ch = (int16_t)atoi(c_ch);
+		val = cal_info_id2iter(c_val);
+		if(ch< get_pha_ch_max() && val >=0){
+			scal_id[ch] = val;
+		}
+		free(buf);
+		buf = NULL;
+	}
+}
+
+LOCAL void get_offset_data(struct rb *rb, struct Cal_info *cal_info, uint16_t line)
+{
+	char *inner_ptr = NULL; 
+	char *buf;
+	char *c_ch, *c_val;
+	int16_t ch,val;
+	uint32_t read_size;
+
+	APP_ASSERT("rb == NULL\r\n", rb);
+
+	while(1){
+		buf = (char *)rb_getline(rb, "\r\n", 2, &read_size);
+		if(!buf) break;
+
+		c_ch = strtok_r((char *)buf, ",", &inner_ptr);
+		if(!c_ch){
+			APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_SERIOUS, ("file format error.\r\n"));
+			free(buf);
+			return;
+		}
+		c_val = strtok_r(NULL, "\r", &inner_ptr);
+		if(!c_val){
+			APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_SERIOUS, ("file format error.\r\n"));
+			free(buf);
+			return;
+		}
+		ch = (int16_t)atoi(c_ch);
+		val = (int16_t)atoi(c_val);
+		
+		if(ch< get_pha_ch_max()){
+			scal_offset[ch]=val;
+		}
+		free(buf);
+		buf = NULL;
+	}
+}
+
+
 /* Public functions ----------------------------------------------------------*/
-int32_t calibration_proc(uint32_t ch, int32_t att_val, int32_t val)
+int32_t calibration_is_enabled(void)
+{
+	return cali_enable;
+}
+
+int32_t calibration_proc(uint32_t ch, int32_t att_val, int32_t pha_val)
 {
 	uint16_t j = 0;
 	int16_t offset = 0;
 	struct Cal_info *cal_info;
+	int32_t val = pha_val;
 
 	cal_info = get_cal_info_by_iter(scal_id[ch]);
 	if(!cal_info) {
@@ -303,11 +412,45 @@ int32_t calibration_proc(uint32_t ch, int32_t att_val, int32_t val)
 	return val;
 }
 
+void save_cscd_file(void)
+{
+	char full_path[FILE_PATH_LEN];
+#define LINE_TEMP_SIZE	64
+	char line_temp[LINE_TEMP_SIZE];
+	int write_len;
+	int fd;
+	int16_t i;
+
+	snprintf(full_path, FILE_PATH_LEN, "%s/%s%s", 
+		PRJ_FILE_PATH, relative_path, cali_pt_filename);
+
+/*	mkdir(CALIBRATION_DIR, O_CREAT);*/
+	fd = open(full_path, O_WRONLY | O_CREAT | O_TRUNC, 0);
+	if(fd<0){
+		APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_WARNING ,
+			(" open file failed.\r\n"));
+		return;
+	}
+
+	for(i = 0; i<get_pha_ch_max(); i++){
+		struct Cal_info * cal_info = get_cal_info_by_iter(scal_id[i]);
+
+		snprintf(line_temp, LINE_TEMP_SIZE, "%d,%s\r\n", i, cal_info->cal_id);
+		write_len = write(fd, line_temp, strlen(line_temp));
+		if(write_len<0){
+			APP_DEBUGF(CALI_DEBUG ,
+				("file read complate.(fn = \"%s\",code = %d)\r\n", full_path, write_len));
+			break;
+		}
+	}
+	close(fd);
+}
+
 int32_t init_calibration(json_object *cali_obj)
 {
-    int i =0, cali_obj_num = 0, flag = 0;
+    int i =0, cali_obj_num = 0;
     const char *filename;
-	const char *relative_path;
+
 	char full_path[FILE_PATH_LEN];
 	json_object *array_obj = 0;
 
@@ -324,40 +467,59 @@ int32_t init_calibration(json_object *cali_obj)
 		struct Cal_info *cal_info = (struct Cal_info *)malloc(sizeof(struct Cal_info));
 		memset(cal_info, 0, sizeof(struct Cal_info));
 		array_obj = config_get_array_obj(cali_obj, "CALI_OBJS", i);
-
+		// load 2G6_inf.csv 
 		s_att_effect = config_get_bool(array_obj, "ADJ_PHA_BY_ATT", 0);
-		if(flag){
+		if(s_att_effect){
 			filename = config_get_string(array_obj, "ADJ_PHA_BY_ATT_FILE", "");
 			strncpy(full_path, relative_path, FILE_PATH_LEN);
 			strncat(full_path, filename, FILE_PATH_LEN - strlen(relative_path));
 			APP_DEBUGF(CALI_DEBUG | APP_DBG_TRACE, ("load file:(%s).\r\n", full_path));
-			csv_cal_read_file(full_path, (File_reader)get_inf_cal_data, cal_info);
+			csv_read_file(full_path, (File_reader)get_inf_cal_data, cal_info);
 		}
-
+		// load 2G6_pha.csv 
 		s_pha_by_table_enable = config_get_bool(array_obj, "ADJ_PHA_BY_TABLE", 0);
-		if(flag){
+		if(s_pha_by_table_enable){
 			filename = config_get_string(array_obj, "ADJ_PHA_BY_TABLE_FILE", "");
 			strncpy(full_path, relative_path, FILE_PATH_LEN);
 			strncat(full_path, filename, FILE_PATH_LEN - strlen(relative_path));
 			APP_DEBUGF(CALI_DEBUG | APP_DBG_TRACE, ("load file:(%s).\r\n", full_path));
-			csv_cal_read_file(full_path, (File_reader)get_pha_cal_data, cal_info);
+			csv_read_file(full_path, (File_reader)get_pha_cal_data, cal_info);
 		}
-
+		// load 2G6_stretch.csv
 		s_stretch_enable = config_get_bool(array_obj, "ADJ_PHA_BY_STRETCH", 0);
-		if(flag){
+		if(s_stretch_enable){
 			stretch_point = config_get_int(array_obj, "ADJ_PHA_BY_STRETCH_POINT", 0);
 			filename = config_get_string(array_obj, "ADJ_PHA_BY_STRETCH_FILE", "");
 			strncpy(full_path, relative_path, FILE_PATH_LEN);
 			strncat(full_path, filename, FILE_PATH_LEN - strlen(relative_path));
 			APP_DEBUGF(CALI_DEBUG | APP_DBG_TRACE, ("load file:(%s).\r\n", full_path));
-			csv_cal_read_file(full_path, (File_reader)get_pha_stretch_data, cal_info);
+			csv_read_file(full_path, (File_reader)get_pha_stretch_data, cal_info);
 		}
 
 		// set calibration point name
 		cal_info->cal_id = config_get_string(array_obj, "NAME", "0G0");
 		list_add(&cal_info->list, &cal_info_root.list);
     }
+	// load offset
+	scal_offset = (int16_t*)malloc(sizeof(int16_t) * get_pha_ch_max());
+	if(!scal_offset){
+		APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_SERIOUS ,
+			("get_phase_cal_config: scal_offset malloc failed.\r\n"));
+		return RET_ERROR;
+	}
+	memset(scal_offset, 0, sizeof(int16_t) * get_pha_ch_max());
 
+	filename = config_get_string(cali_obj, "CALI_OFFSET_FILE", "pha_freq");
+	if(!filename){
+		APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_WARNING,
+			("get_phase_cal_config: unspecified calibreation phase shifter offset file name.\r\n"));
+		return RET_ERROR;
+	}
+	strncpy(full_path, relative_path, FILE_PATH_LEN);
+	strncat(full_path, filename, FILE_PATH_LEN - strlen(relative_path));
+	csv_read_file(full_path, (File_reader)get_offset_data, NULL);
+
+	// load calibration point
 	scal_id = (uint8_t*)malloc(sizeof(uint8_t) * get_pha_ch_max());
 	if(!scal_id){
 		APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_SERIOUS,
@@ -365,5 +527,18 @@ int32_t init_calibration(json_object *cali_obj)
 		return RET_ERROR;
 	}
 	memset(scal_id, 0, sizeof(uint8_t) * get_pha_ch_max());
+
+	cali_pt_filename = config_get_string(cali_obj, "CALI_SAVED_POINTS_FILE", "pha_freq.csv");
+	if(!cali_pt_filename){
+		APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_WARNING ,
+			("get_phase_cal_config: unspecified calibreation phase shifter frequnce file name.\r\n"));
+		return RET_ERROR;
+	}
+	strncpy(full_path, relative_path, FILE_PATH_LEN);
+	strncat(full_path, cali_pt_filename, FILE_PATH_LEN - strlen(relative_path));
+	APP_DEBUGF(CALI_DEBUG | APP_DBG_TRACE, ("sending calibreation sheet ...\r\n"));
+	csv_read_file(full_path, (File_reader)get_freq_data, NULL);
+	save_cscd_file();
+
     return RET_OK;
 }

@@ -56,7 +56,7 @@ int32_t set_att(uint32_t ch, int32_t val)
 
     att = att_get_step_offset(val);
     subbd_send_SCSV(DEST_ATT, g_protocol_obj, g_bus_obj, ch, att);
-    if(cali_enable){
+    if(calibration_is_enabled()){
         int32_t pha;
         pha = get_pha(ch);
         pha = calibration_proc(ch, att, pha);

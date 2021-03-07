@@ -22,7 +22,7 @@ typedef void (*File_reader)(struct rb *rb, void *dest_obj, uint32_t line);
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/ 
-void csv_cal_read_file(const char *filename, File_reader file_reader, void *dest_obj);
+void csv_read_file(const char *filename, File_reader file_reader, void *dest_obj);
 
 #endif
 /********************** (C) COPYRIGHT HJ technologies *************************/

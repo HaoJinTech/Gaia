@@ -66,7 +66,7 @@ LOCAL int16_t get_file_row(int fd)
 	return count;
 }
 
-void csv_cal_read_file(const char *filename, File_reader file_reader, void *dest_obj)
+void csv_read_file(const char *filename, File_reader file_reader, void *dest_obj)
 {
 	char full_path[FILE_FULL_PATH_SIZE];
 	int read_len, put_len;
@@ -77,7 +77,6 @@ void csv_cal_read_file(const char *filename, File_reader file_reader, void *dest
 
 	APP_ASSERT("filename == NULL.\r\n", filename);
     APP_ASSERT("file_reader == NULL.\r\n", file_reader);
-    APP_ASSERT("cal_info == NULL.\r\n", dest_obj);
 
 /*	mkdir(RELATIVE_FILE_PATH, O_CREAT);*/
 	snprintf(full_path, FILE_FULL_PATH_SIZE, "%s/%s", PRJ_FILE_PATH, filename);
