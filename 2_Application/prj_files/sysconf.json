@@ -2,7 +2,9 @@
     "NETWORK": {
         "IP_ADDR": "192.168.1.18",
         "IP_MASK": "255.255.255.0",
-        "IP_GATEWAY": "192.168.1.1"
+        "IP_GATEWAY": "192.168.1.1",
+        "TCP_PORT": 50000,
+        "DHCP_ENABLE": false
     },
 
     "ATT": {
@@ -22,6 +24,7 @@
     },
 
     "CALIBRATION": {
+        "CALI_FOLDER_PATH": "Calibration/",
         "CALI_OBJS": [
             {
                 "NAME": "2G6",
@@ -30,18 +33,18 @@
                 "ADJ_PHA_BY_TABLE": true,
                 "ADJ_PHA_BY_TABLE_FILE": "2G6_pha.csv",
                 "ADJ_PHA_BY_STRETCH": true,
-                "ADJ_PHA_BY_STRETCH_POINT": 6,
+                "ADJ_PHA_BY_STRETCH_POINT": 11,
                 "ADJ_PHA_BY_STRETCH_FILE": "2G6_stretch.csv"
             },
             {
-                "NAME": "3G5",
+                "NAME": "TEMP",
                 "ADJ_PHA_BY_ATT": true,
-                "ADJ_PHA_BY_ATT_FILE": "3G5_inf.csv",
+                "ADJ_PHA_BY_ATT_FILE": "TEMP_inf.csv",
                 "ADJ_PHA_BY_TABLE": true,
-                "ADJ_PHA_BY_TABLE_FILE": "3G5_pha.csv",
+                "ADJ_PHA_BY_TABLE_FILE": "TEMP_pha.csv",
                 "ADJ_PHA_BY_STRETCH": true,
-                "ADJ_PHA_BY_STRETCH_POINT": 6,
-                "ADJ_PHA_BY_STRETCH_FILE": "3G5_stretch.csv"
+                "ADJ_PHA_BY_STRETCH_POINT": 11,
+                "ADJ_PHA_BY_STRETCH_FILE": "TEMP_stretch.csv"
             }
         ]
     }

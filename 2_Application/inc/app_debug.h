@@ -95,7 +95,7 @@ void print_hex(const char* data, int data_len);
                                    ((debug) & APP_DBG_ON) && \
                                    ((debug) & APP_DBG_TYPES_ON) && \
                                    ((uint16_t)((debug) & APP_DBG_MASK_LEVEL) >= APP_DBG_MIN_LEVEL)) { \
-                                      APP_PLATFORM_DIAG(("[%s:%s:%d]: ",__FILE__, __FUNCTION__, __LINE__));\
+                                      APP_PLATFORM_DIAG(("%s:%d:1: %s: ",__FILE__, __LINE__, __FUNCTION__ ));\
                                       APP_PLATFORM_DIAG(message); \
                                       if ((debug) & APP_DBG_HALT) { \
                                         while(1); \
@@ -108,7 +108,7 @@ void print_hex(const char* data, int data_len);
                                    ((debug) & APP_DBG_ON) && \
                                    ((debug) & APP_DBG_TYPES_ON) && \
                                    ((uint16_t)((debug) & APP_DBG_MASK_LEVEL) >= APP_DBG_MIN_LEVEL)) { \
-                                      APP_PLATFORM_DIAG(("[%s:%s:%d]:\n",__FILE__, __FUNCTION__, __LINE__));\
+                                      APP_PLATFORM_DIAG(("%s:%d:1: %s:\n",__FILE__, __LINE__, __FUNCTION__ ));\
                                       APP_PLATFORM_DIAG_HEX(message, len); \
                                       if ((debug) & APP_DBG_HALT) { \
                                         while(1); \

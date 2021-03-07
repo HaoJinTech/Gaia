@@ -31,8 +31,9 @@ int config_get_bool(json_object *obj_base, char *key, int defval);
 /*array*/
 int config_get_array_lenth(json_object *obj_base, char *key);
 json_object *config_get_array_obj(json_object *obj_base, char *key, int index);
+/*
 const char *config_get_array_string(json_object *obj_base, char *key, int index,const char* defval);
 int config_get_array_int(json_object *obj_base, char *key, int index, int defval);
 int config_get_array_bool(json_object *obj_base, char *key, int index, int defval);
-
+*/
 #endif
