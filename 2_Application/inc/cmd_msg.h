@@ -15,7 +15,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include <stdint.h>
 /* Exported types ------------------------------------------------------------*/
-typedef  int32_t (*SEND_BUF) (uint32_t dest_fd, char *buf, uint32_t len);
+typedef  int32_t (*SEND_BUF) (uint32_t dest_fd, const char *fmt, ...);
 
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/

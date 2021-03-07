@@ -46,6 +46,11 @@ LOCAL int16_t att_get_step_offset(int16_t val)
 	return rt_val;
 }
 
+/* Public functions ----------------------------------------------------------*/
+int32_t get_att_ch_max(void)
+{
+    return g_ch_max;
+}
 
 int32_t set_att(uint32_t ch, int32_t val)
 {

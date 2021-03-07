@@ -27,6 +27,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <sys/epoll.h>
+#include <stdarg.h>
 
 #include "app_debug.h"
 #include "cmd_msg.h"
@@ -59,7 +60,7 @@ TCP_SOCK_BUFS rx_buf_list_root;
 LOCAL void listen_loop(uint32_t sock_fd);
 LOCAL void accept_conn(uint32_t sock_fd, uint32_t epollfd);
 LOCAL int32_t recv_message(uint32_t sock_fd);
-LOCAL int32_t send_message(uint32_t dest_fd, char *buf, uint32_t len);
+LOCAL int32_t send_message(uint32_t dest_fd, const char *fmt, ...);
 LOCAL uint32_t init_rx_buffer(uint32_t accept_fd);
 LOCAL TCP_SOCK_BUFS *fd2rxbuf(uint32_t sock_fd);
 LOCAL void close_sock(uint32_t sock_fd);
@@ -155,13 +156,19 @@ LOCAL TCP_SOCK_BUFS *fd2rxbuf(uint32_t sock_fd)
     return NULL;
 }
 
-LOCAL int32_t send_message(uint32_t dest_fd, char *buf, uint32_t len)
+#define CMD_PRINT_SIZE   1024
+LOCAL int32_t send_message(uint32_t dest_fd, const char *fmt, ...)
 {
-    if(len == 0){
-        return send(dest_fd, buf, strlen(buf), 0);
-    }else{
-        return send(dest_fd, buf, len, 0);
-    }
+   	va_list args;
+    char cmd_buf[CMD_PRINT_SIZE];
+    int len=0;
+
+   	va_start(args, fmt);
+	len = vsnprintf(cmd_buf, CMD_PRINT_SIZE, fmt, args);
+	va_end(args);
+
+    return send(dest_fd, cmd_buf, len, 0);
+
 }
 
 LOCAL int32_t check_buf_and_send_msg(TCP_SOCK_BUFS *tcp_rx_buf)

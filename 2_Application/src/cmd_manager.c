@@ -128,7 +128,7 @@ int32_t send_cmd_msg(uint32_t dest_fd, char* recv_buf, SEND_BUF send_buf_fun)
 
     ret = msgsnd(msq_id, (void *)&msg, sizeof(CMD_MSG)-sizeof(long), 0);
     if(ret<0){
-        APP_DEBUGF(CMD_DEBUG | APP_DBG_LEVEL_SERIOUS, ("[send_cmd_msg] msgsnd failed (%d).\r\n",ret));
+        APP_DEBUGF(CMD_DEBUG | APP_DBG_LEVEL_SERIOUS, (" msgsnd failed (%d).\r\n",ret));
         return RET_ERROR;
     }
 /*

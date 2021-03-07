@@ -13,6 +13,7 @@
 #include "bll/bll_att.h"
 #include "bll/bll_pha.h"
 #include "bll/bll_calibration.h"
+#include "bll/bll_ch_remap.h"
 
 #include "platform.h"
 #include "sys_config.h"
@@ -31,7 +32,8 @@ typedef struct bll_objects{
 BLL_OBJ bll_objs[] ={
     {"ATT", init_att},
     {"PHA", init_pha},
-    {"CALIBRATION", init_calibration}
+    {"CALIBRATION", init_calibration},
+    {"CHREMAP", init_ch_remap}
 };
 uint32_t BLL_OBJ_SIZE = sizeof(bll_objs) / sizeof(BLL_OBJ);
 
