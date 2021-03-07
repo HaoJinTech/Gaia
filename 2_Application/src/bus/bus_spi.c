@@ -24,6 +24,7 @@
 #include <sys/ioctl.h>
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
+#include "CRC.h"
 /* Private typedef -----------------------------------------------------------*/
 //需要处理的消息队列
 typedef struct Message_Type{
@@ -36,6 +37,7 @@ typedef struct Message_Type{
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #define Empty_Msg_BufferLength 8
 #define ENDLINE {255, 255, 0}
+#define MAXPACKLENGTH 1024
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 static const char *device = "/dev/spidev0.0";
@@ -282,8 +284,55 @@ int32_t bus_spi_open(void)
 int32_t bus_spi_write(char *data, uint32_t len)
 {
 //<<<<<<< HEAD
+	//判定包长
+	uint32_t sendpacklength = MAXPACKLENGTH;
+	uint16_t packages = (sizeof(&data) - 1) / MAXPACKLENGTH + 1;
+	if(packages <= 1)
+	{
+		sendpacklength = sizeof(&data);
+	}
+	int32_t ret = bus_spi_sendLength(sendpacklength);
+	if(ret < 0)
+	{
+		//报错信息
+	}
+	char packmsg[sendpacklength + 2];
+	memset(packmsg, 0, sendpacklength);
+	uint32_t index = 0;
 	char *readbuff;
-	transfer(fd, &data, readbuff, sizeof(&data));
+	//从第一个包开始直到最后第二个包结束，进行发包
+	for(int i = 0;i < packages - 1;i++)
+	{
+		strncpy(packmsg, data + index, sendpacklength);
+		index += sendpacklength;
+		//加入CRC
+		packmsg[sendpacklength] = 0x0d;
+		packmsg[sendpacklength + 1] = 0x0a;
+		transfer(fd, packmsg, readbuff, sendpacklength);
+		//每发送指定数量的包以后进行询问，看还积了多少包没有发，再往下发指定数量-还剩的值，这个差值可以做一个门限，不需要一个个发
+	}
+	//处理发完剩下的一包，剩下一包理论上是小于等于指定包长度的
+	if(sizeof(&data) - 1 > index)
+	{
+		memset(packmsg, 0, sendpacklength + 2);
+		strncpy(packmsg, data + index, sizeof(&data) - 1 - index);
+		index = 0;
+		//加入CRC
+		packmsg[sendpacklength] = 0x0d;
+		packmsg[sendpacklength + 1] = 0x0a;
+		transfer(fd, packmsg, readbuff, sizeof(packmsg));
+	}
+	return 0;
+}
+
+int32_t bus_spi_sendLength(uint32_t len)
+{
+	//制作长度包下发
+	char data[8];
+
+
+	char *readbuff;
+	transfer(fd, data, readbuff, sizeof(data));
 	return 0;
 }
 
