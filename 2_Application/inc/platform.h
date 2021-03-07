@@ -17,6 +17,7 @@
 #define PRJ_FILE_PATH  "./prj_files" 
 #define CLI_NUM_MAX         64
 #define SERVER_PORT_DEF     50000
+#define FILE_PATH_LEN       128
 
 /* PROTOCLOL ID */
 #define PROTOCOL_ID_RR485       0

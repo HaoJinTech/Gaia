@@ -18,9 +18,9 @@
 
 /* Exported types ------------------------------------------------------------*/
 typedef struct Mapping_model{
-	char name[32];
+	const char *name;
 	uint16_t num;
-	const int16_t* map;
+	int32_t* map;
 }MAPPING_MODEL;
 
 /* Exported constants --------------------------------------------------------*/

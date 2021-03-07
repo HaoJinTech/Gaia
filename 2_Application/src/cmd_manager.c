@@ -66,6 +66,7 @@ CMD_PARSE_OBJ *parse_cmd(char *str, char *tok)
     char *inner_ptr=NULL;
     char *str_iter = str;
     int i=0, word_num = 0;
+    char *word_temp;
 
     if(!str || !tok)
         return NULL;
@@ -75,15 +76,10 @@ CMD_PARSE_OBJ *parse_cmd(char *str, char *tok)
         if(tok[0] == str_iter[i]){
             word_num++;
         }
+        if(str_iter[i] == '\r' || str_iter[i] == '\n'){
+            str_iter[i] = tok[0];
+        }
         i++;
-    }
-
-    // remove the \r\n token
-    if(str_iter[i-1] == '\r' || str_iter[i-1] == '\n'){
-        str_iter[i-1] = 0;
-    }
-    if(str_iter[i-2] == '\r' || str_iter[i-2] == '\n'){
-        str_iter[i-2] = 0;
     }
 
     word_num++; // last word
@@ -91,17 +87,17 @@ CMD_PARSE_OBJ *parse_cmd(char *str, char *tok)
     
     obj = (CMD_PARSE_OBJ*)malloc(sizeof(CMD_PARSE_OBJ));
     obj->words = (char**)malloc(sizeof(char*) * word_num);
-    obj->num = word_num;
-
+    
     i =0;
-    obj->words[i] = strtok_r((char *)str_iter, tok, &inner_ptr);
-    do{
-        i++; 
-        obj->words[i] = strtok_r(NULL, tok, &inner_ptr);
+    word_temp = strtok_r((char *)str_iter, tok, &inner_ptr);
+    do{        
+        obj->words[i] = word_temp;
         APP_DEBUGF(CMD_DEBUG | APP_DBG_TRACE , 
             ("parse word [%d](%s).\r\n",i,obj->words[i]));
-    }while(i < word_num-1);
+        i++;
+    }while(NULL !=( word_temp=strtok_r(NULL, tok, &inner_ptr)));
     
+    obj->num = i;
     return obj;
 }
 

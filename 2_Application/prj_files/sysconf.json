@@ -13,14 +13,18 @@
         "ATT_LOGIC_STEP": 2,
         "ATT_BD_STEP": 2,
         "ATT_PROTOCOL": 0,
-        "ATT_BUS": 0
+        "ATT_BUS": 0,
+        "ATT_REMAP_ENABLE": 1,
+        "ATT_REMAP_INDEX": 0
     },
 
     "PHA": {
         "PHA_MAX_CH": 2048,
         "PHA_MAX_VAL": 365,
         "PHA_PROTOCOL": 0,
-        "PHA_BUS": 0
+        "PHA_BUS": 0,
+        "PHA_REMAP_ENABLE": 1,
+        "PHA_REMAP_INDEX": 0
     },
 
     "CALIBRATION": {
@@ -47,6 +51,15 @@
                 "ADJ_PHA_BY_STRETCH": true,
                 "ADJ_PHA_BY_STRETCH_POINT": 11,
                 "ADJ_PHA_BY_STRETCH_FILE": "TEMP_stretch.csv"
+            }
+        ]
+    },
+
+    "CHREMAP": {
+        "REMAP_PATH": "Ch_remap/",
+        "REMAP_OBJ": [
+            {
+                "REMAP_FILE": "map_pha_128X16_2048_DT.csv"
             }
         ]
     }

@@ -42,7 +42,6 @@ struct Cal_info{
 };
 
 /* Private define ------------------------------------------------------------*/
-#define FILE_PATH_LEN     128
 #define FILE_PATH_TELATIVE_PATH  "./" 
 #define CALI_DEBUG        APP_DBG_ON
 
