@@ -36,9 +36,12 @@ int32_t get_pha_ch_max(void)
 
 int32_t set_pha(uint32_t ch, int32_t val)
 {
-    int32_t att = 0;
-    // TODO: send att value to DAL layer
+    if(ch >= g_ch_max )
+        return RET_ERROR;
+
+    g_pha_vals[ch] = val;
     if(calibration_is_enabled()){
+        int32_t att = get_att(ch);
         val = calibration_proc(ch, att, val);
     }
 

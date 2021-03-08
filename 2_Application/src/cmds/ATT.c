@@ -27,13 +27,16 @@ void cmd_att(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun)
     // more than 3 word so set att.
     }else if(obj->num >=3){
       int32_t ch = 0, val = 0;
-      while(i+1 < obj->num){
+      while(i < obj->num){
         ch = cmd_obj_get_int(obj, i);
+        if(ch >0) ch--;
+        else {i++;continue;} 
         i++;
+        if(i >= obj->num) break;
         val = cmd_obj_get_int(obj, i);
         i++;
         set_att(ch, val);
-        send_buf_fun(dest_fd, "%d %d;", ch, get_att(ch));
+        send_buf_fun(dest_fd, "%d %d;", ch+1, get_att(ch));
       }
     }
     send_buf_fun(dest_fd, "\r\n");

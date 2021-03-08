@@ -12,7 +12,8 @@
 #ifndef  USER_CONFIG_H
 #define  USER_CONFIG_H
 
-#include "stdint.h"
+#include <stdint.h>
+#include <stddef.h>
 
 #define PRJ_FILE_PATH  "./prj_files" 
 #define CLI_NUM_MAX         64
@@ -24,8 +25,9 @@
 #define PROTOCOL_ID_HSSPI       1
 
 /* BUS ID */
-#define BUS_ID_SPI      0
-#define BUS_ID_UART     1
+#define BUS_ID_DUMP     0
+#define BUS_ID_SPI      1
+#define BUS_ID_UART     2
 
 /* DEST TYPE */
 #define DEST_ATT        0x01

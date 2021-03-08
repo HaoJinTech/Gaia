@@ -2,6 +2,7 @@
     "files.associations": {
         "stdlib.h": "c",
         "string.h": "c",
-        "cmd_prototype.h": "c"
+        "cmd_prototype.h": "c",
+        "platform.h": "c"
     }
 }

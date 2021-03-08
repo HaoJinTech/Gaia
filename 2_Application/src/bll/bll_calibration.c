@@ -26,10 +26,17 @@
 struct Cal_info{
 	const char *cal_id;
 
+	// att effect pha
 	uint16_t point_num;
 	int16_t *att_point;
 	int16_t *pha_offset;
 
+	// pha effect att
+	uint16_t point_num_att;
+	int16_t *pha_point;
+	int16_t *att_offset;
+
+	// pha value remap
 	int16_t pha_map_item_count;
 	int16_t *pha_map_cal;
 	
@@ -52,7 +59,8 @@ int32_t cali_enable = 0;
 LOCAL struct Cal_info cal_info_root;
 LOCAL uint8_t 			*scal_id = NULL;					// the calibration object index of every channel
 LOCAL int16_t			*scal_offset = NULL;
-LOCAL uint8_t			s_att_effect = 0;					// is effect by att
+LOCAL uint8_t			s_att_effect = 0;					// is pha effect by att
+LOCAL uint8_t			s_pha_effect = 0; 					// is att effect by pha
 LOCAL uint8_t			s_pha_by_table_enable = 0;			// is effect by table calibration
 LOCAL uint8_t			s_stretch_enable = 0;				// is effect by stretch
 LOCAL uint32_t 			stretch_point =0;
@@ -125,6 +133,59 @@ LOCAL void get_inf_cal_data(struct rb *rb, struct Cal_info *cal_info, uint16_t l
 		free(buf);
 	}	
 }
+
+LOCAL void get_attinf_cal_data(struct rb *rb, struct Cal_info *cal_info, uint16_t line)
+{
+	char *inner_ptr = NULL; 
+	char *buf;
+	char *c_key, *c_val, *c_val_2;
+	int16_t val, val_2, key;
+	uint32_t read_size;
+
+	APP_ASSERT("get_attinf_cal_data: rb == NULL or cal_info == NULL.\r\n", rb && cal_info);
+
+	if(cal_info->pha_point == NULL ){
+		cal_info->pha_point = (int16_t*)malloc(line* sizeof(int16_t));
+		cal_info->att_offset = (int16_t*)malloc(line* sizeof(int16_t));
+		cal_info->point_num_att = 0;
+	}
+	
+	while(1){
+		buf = (char *)rb_getline(rb, "\r\n", 2, &read_size);
+		if(!buf){
+			APP_DEBUGF(CALI_DEBUG | APP_DBG_TRACE,
+				("get_inf_cal_data: round buffer read complite.\r\n"));
+			break;
+		}
+
+		c_key = strtok_r((char *)buf, ",", &inner_ptr);
+		c_val = strtok_r(NULL, ",", &inner_ptr);
+		c_val_2 = strtok_r(NULL, "\r\n", &inner_ptr);
+
+		if(c_key && c_val){
+
+			key = (int16_t)atoi(c_key);
+			val = (int16_t)atoi(c_val);
+			val_2 = (int16_t)atoi(c_val_2);
+			
+			if(cal_info->pha_point && 
+				 cal_info->att_offset &&
+				 key < line){
+				cal_info->point_num_att ++;
+				cal_info->pha_point[key] = val;
+				cal_info->att_offset[key] = val_2;
+			}else{
+				APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_WARNING ,
+					("cal_info not initalised.\r\n"));
+			}
+		}else{
+			APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_SERIOUS ,
+				("file format error, read next line.\r\n"));
+		}
+		free(buf);
+	}	
+}
+
 
 LOCAL void get_pha_cal_data(struct rb *rb, struct Cal_info *cal_info, uint16_t line)
 {
@@ -474,6 +535,15 @@ int32_t init_calibration(json_object *cali_obj)
 			strncat(full_path, filename, FILE_PATH_LEN - strlen(relative_path));
 			APP_DEBUGF(CALI_DEBUG | APP_DBG_TRACE, ("load file:(%s).\r\n", full_path));
 			csv_read_file(full_path, (File_reader)get_inf_cal_data, cal_info);
+		}
+		// load 2G6_attinf.csv 
+		s_pha_effect = config_get_bool(array_obj, "ADJ_ATT_BY_PHA", 0);
+		if(s_pha_effect){
+			filename = config_get_string(array_obj, "ADJ_ATT_BY_PHA_FILE", "");
+			strncpy(full_path, relative_path, FILE_PATH_LEN);
+			strncat(full_path, filename, FILE_PATH_LEN - strlen(relative_path));
+			APP_DEBUGF(CALI_DEBUG | APP_DBG_TRACE, ("load file:(%s).\r\n", full_path));
+			csv_read_file(full_path, (File_reader)get_attinf_cal_data, cal_info);
 		}
 		// load 2G6_pha.csv 
 		s_pha_by_table_enable = config_get_bool(array_obj, "ADJ_PHA_BY_TABLE", 0);

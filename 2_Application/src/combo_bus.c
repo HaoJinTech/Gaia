@@ -11,10 +11,12 @@
 	
 /* Includes ------------------------------------------------------------------*/
 #include "platform.h"
+#include "bus/bus_dump.c"
 #include "bus/bus_spi.c"
 // TODO: include new bus src here
 
 BUS_DRIVER bus_drivers[]={
+    BUS_DUMP,
     BUS_SPI,
     // TODO: add new bus driver here
 };

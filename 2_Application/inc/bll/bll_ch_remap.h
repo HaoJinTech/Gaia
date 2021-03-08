@@ -25,8 +25,11 @@ typedef struct Mapping_model{
 
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
+/* Exported value ------------------------------------------------------------*/
+
 /* Exported functions --------------------------------------------------------*/ 
 int32_t init_ch_remap(json_object *pha_obj);
+int32_t ch_remap(uint32_t index, uint32_t ch);
 
 #endif
 /********************** (C) COPYRIGHT HJ technologies *************************/

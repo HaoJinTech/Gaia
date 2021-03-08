@@ -21,7 +21,7 @@ typedef struct bus_ctrl_msg
     void      *val;
 }BUS_CTRL_MSG;
 
-typedef int32_t (*bus_init)(uint32_t port, uint32_t freq, void *other);
+typedef int32_t (*bus_init)(uint32_t port, uint32_t freq, void *res);
 typedef int32_t (*bus_open)(void);
 typedef int32_t (*bus_write)(char *data, uint32_t len);
 typedef void *(*bus_read)(int len);

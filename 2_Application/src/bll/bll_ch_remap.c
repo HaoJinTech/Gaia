@@ -27,7 +27,8 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 LOCAL const char *remap_path;
-LOCAL MAPPING_MODEL *mapping_objs;
+LOCAL uint32_t remap_obj_num = 0;
+MAPPING_MODEL *mapping_objs = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 int32_t remap_read_file( MAPPING_MODEL *map_model)
@@ -43,7 +44,7 @@ int32_t remap_read_file( MAPPING_MODEL *map_model)
 
 	snprintf(full_path, FILE_PATH_LEN, "%s/%s%s", PRJ_FILE_PATH, remap_path, filename);
 	APP_DEBUGF(REMAP_DEBUG | APP_DBG_TRACE, ("open file: %s\r\n", full_path));
-  stream = fopen(full_path, "r"); 
+  stream = fopen(full_path, "r");
 	if(stream == NULL){
 		APP_DEBUGF(REMAP_DEBUG | APP_DBG_LEVEL_WARNING ,
 		    ("open file failed.\r\n"));
@@ -88,9 +89,16 @@ end:
 }
 
 /* Public functions ----------------------------------------------------------*/
+int32_t ch_remap(uint32_t index, uint32_t ch)
+{
+  if(index<remap_obj_num && ch < mapping_objs[index].num){
+    APP_DEBUGF(REMAP_DEBUG | APP_DBG_TRACE, ("%d->%d\n", ch, mapping_objs[index].map[ch]));
+    return mapping_objs[index].map[ch];
+  }else return ch;
+}
+
 int32_t init_ch_remap(json_object *chremap_obj)
 {
-  uint32_t remap_obj_num = 0;
   uint32_t i =0;
   remap_path = config_get_string(chremap_obj, "REMAP_PATH", "Ch_remap/");
 
@@ -107,3 +115,4 @@ int32_t init_ch_remap(json_object *chremap_obj)
 
   return RET_OK;
 }
+
