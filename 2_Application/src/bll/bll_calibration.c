@@ -420,7 +420,7 @@ int32_t calibration_is_enabled(void)
 	return cali_enable;
 }
 
-int32_t calibration_proc(uint32_t ch, int32_t att_val, int32_t pha_val)
+int32_t calibration_proc(uint32_t ch, int32_t att_val, int32_t pha_val, int32_t *o_attval)
 {
 	uint16_t j = 0;
 	int16_t offset = 0;
@@ -455,9 +455,23 @@ int32_t calibration_proc(uint32_t ch, int32_t att_val, int32_t pha_val)
 	// step3:  remainder
 	val = calc_remainder(val, cal_info->pha_map_item_count);
 	
-	// step4:  phamap
+	// step4:  phainf
+	if(s_pha_effect && cal_info->point_num_att){
+		for(j=1; j<cal_info->point_num_att; j++){
+			if(cal_info->pha_point[j-1]<= val && cal_info->pha_point[j]> val){
+				break;
+			}
+		}
+		offset = cal_info->att_offset[j-1];
+		if(o_attval){
+			(*o_attval) = att_val + offset;
+		}
+	}
+
+	// step5:  phamap
 	val = cal_info->pha_map_cal[val];
-	// step5:  stretch (optional)
+
+	// step6:  stretch (optional)
 	if(stretch_point){
 		uint8_t map_min_i = getMapPosition(cal_info, val);
 		int16_t map_min = cal_info->stretch[map_min_i];

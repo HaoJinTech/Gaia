@@ -71,14 +71,13 @@ int32_t set_att(uint32_t ch, int32_t val)
     if(g_remap_enable){
         ch = ch_remap(g_remap_index, ch);
     }
-    subbd_send_SCSV(DEST_ATT, g_protocol_obj, g_bus_obj, ch, att);
-    
+   
     if(calibration_is_enabled()){
         int32_t pha;
-        pha = get_pha(ch);
-        pha = calibration_proc(ch, att, pha);
+        pha = calibration_proc(ch, att, get_pha(ch), &att);
         subbd_send_SCSV(DEST_PHA, g_protocol_obj, g_bus_obj, ch, pha);
     }
+    subbd_send_SCSV(DEST_ATT, g_protocol_obj, g_bus_obj, ch, att);
 
     return RET_OK;
 }
