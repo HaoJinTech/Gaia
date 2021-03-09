@@ -32,6 +32,7 @@ LOCAL int32_t g_logic_step = 0;
 LOCAL int32_t g_bd_step = 0;
 LOCAL int     g_remap_enable = 0;
 LOCAL int32_t g_remap_index = 0;
+LOCAL int32_t g_att_enable = 0;
 
 LOCAL SUBBD_PROTOCOL  *g_protocol_obj = 0;
 LOCAL BUS_DRIVER      *g_bus_obj = 0;
@@ -40,7 +41,6 @@ LOCAL BUS_DRIVER      *g_bus_obj = 0;
 LOCAL int16_t att_get_step_offset(int16_t val);
 
 /* Private functions ----------------------------------------------------------*/
-
 LOCAL int16_t att_get_step_offset(int16_t val)
 {
 	int16_t rt_val;
@@ -53,6 +53,11 @@ LOCAL int16_t att_get_step_offset(int16_t val)
 }
 
 /* Public functions ----------------------------------------------------------*/
+int32_t att_is_enable(void)
+{
+    return g_att_enable;
+}
+
 int32_t get_att_ch_max(void)
 {
     return g_ch_max;
@@ -99,6 +104,7 @@ int32_t init_att(json_object *att_obj)
     if(!att_obj)
         return RET_ERROR;
 
+    g_att_enable = 1;
     g_ch_max =      config_get_int(att_obj, "ATT_MAX_CH", 8);
     g_val_max =     config_get_int(att_obj, "ATT_MAX_VAL", 110);
     g_logic_step =  config_get_int(att_obj, "ATT_LOGIC_STEP", 2);

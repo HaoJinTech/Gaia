@@ -20,6 +20,7 @@
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/ 
+int32_t att_is_enable(void);
 int32_t set_att(uint32_t ch, int32_t val);
 int32_t get_att(uint32_t ch);
 int32_t get_att_ch_max(void);

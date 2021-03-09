@@ -60,6 +60,13 @@ int32_t cmd_obj_get_int(CMD_PARSE_OBJ *obj, uint32_t index)
     return atoi(obj->words[index]);
 }
 
+char *cmd_obj_get_str(CMD_PARSE_OBJ *obj, uint32_t index)
+{
+    if(index >= obj->num)
+        return 0;
+    return obj->words[index];
+}
+
 CMD_PARSE_OBJ *parse_cmd(char *str, char *tok)
 {
     CMD_PARSE_OBJ *obj = NULL;

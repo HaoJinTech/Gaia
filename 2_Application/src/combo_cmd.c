@@ -15,12 +15,20 @@
 
 #include "cmds/UNKNOW.c"
 #include "cmds/ATT.c"
-#include "cmds/PHA.c"
+#include "cmds/CRPH.c"
+#include "cmds/CPHA.c"
+#include "cmds/CRCD.c"
+#include "cmds/CSCD.c"
+#include "cmds/CLCD.c"
 // TODO: add new cmd src file here
 
 CMD_OBJ cmd_objs[] = {
     CMDOBJ_ATT,
-    CMDOBJ_PHA,
+    CMDOBJ_CPHA,
+    CMDOBJ_CRPH,
+    CMDOBJ_CRCD,
+    CMDOBJ_CSCD,
+    CMDOBJ_CLCD,
     // TODO: add new cmds here
 
     CMDOBJ_UNKNOW

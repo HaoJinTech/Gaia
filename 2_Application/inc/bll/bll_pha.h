@@ -23,6 +23,7 @@
 int32_t set_pha(uint32_t ch, int32_t val);
 int32_t get_pha(uint32_t ch);
 int32_t get_pha_ch_max(void);
+int32_t refresh_pha_val(uint32_t ch);
 
 int32_t init_pha(json_object *json_obj);
 #endif

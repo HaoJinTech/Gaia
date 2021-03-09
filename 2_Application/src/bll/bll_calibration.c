@@ -56,7 +56,8 @@ struct Cal_info{
 /* Private variables ---------------------------------------------------------*/
 int32_t cali_enable = 0;
 
-LOCAL struct Cal_info cal_info_root;
+LOCAL struct Cal_info 	cal_info_root;
+LOCAL uint32_t 			g_cal_info_num;
 LOCAL uint8_t 			*scal_id = NULL;					// the calibration object index of every channel
 LOCAL int16_t			*scal_offset = NULL;
 LOCAL uint8_t			s_att_effect = 0;					// is pha effect by att
@@ -420,6 +421,22 @@ int32_t calibration_is_enabled(void)
 	return cali_enable;
 }
 
+uint32_t get_cali_info_num(void)
+{
+	return g_cal_info_num;
+}
+
+char *get_cali_info_name_by_index(uint32_t i)
+{
+	struct Cal_info *cal_info = NULL;
+
+	if(i < g_cal_info_num){
+		cal_info = get_cal_info_by_iter(i);
+		return cal_info->cal_id;
+	}
+	return NULL;
+}
+
 int32_t calibration_proc(uint32_t ch, int32_t att_val, int32_t pha_val, int32_t *o_attval)
 {
 	uint16_t j = 0;
@@ -486,6 +503,44 @@ int32_t calibration_proc(uint32_t ch, int32_t att_val, int32_t pha_val, int32_t 
 	return val;
 }
 
+int32_t cali_set_freq(uint32_t ch, char *freq_str)
+{
+	struct Cal_info *cal_info;
+	int16_t cal_inter;
+	cal_inter = cal_info_id2iter(freq_str);
+
+	if(-1 == cal_inter){
+		APP_DEBUGF(CONF_DEBUG | APP_DBG_LEVEL_WARNING ,
+			("can not find calibration info.(ch = %d, id = %s)\r\n", ch, freq_str));
+		return RET_ERROR;
+	}
+
+	cal_info = get_cal_info_by_iter(cal_inter);
+	if(!cal_info){
+		APP_DEBUGF(CONF_DEBUG | APP_DBG_LEVEL_WARNING ,
+			("can not find calibration info.(id = %s)\r\n", cal_inter));
+		return RET_ERROR;
+	}
+	scal_id[ch] = cal_inter;
+
+	refresh_pha_val(ch);
+}
+
+char *cali_get_freq(uint32_t ch)
+{
+	struct Cal_info *cal_info;
+	cal_info = get_cal_info_by_iter(scal_id[ch]);
+	if(!cal_info){
+		cmd_kprintf(ts, "%d F;", i+1);
+		APP_DEBUGF(CONF_DEBUG | APP_DBG_LEVEL_WARNING | APP_DBG_TRACE,
+		("can not find calibration info.(ch = %d)\r\n", ch));
+		continue;
+	}else{
+		return cal_info->cal_id;
+	}
+	return NULL;
+}
+
 void save_cscd_file(void)
 {
 	char full_path[FILE_PATH_LEN];
@@ -537,6 +592,7 @@ int32_t init_calibration(json_object *cali_obj)
 
 	relative_path = config_get_string(cali_obj, "CALI_FOLDER_PATH", "Calibration/");
     cali_obj_num = config_get_array_lenth(cali_obj, "CALI_OBJS");
+    g_cal_info_num = 0;
     for(i=0; i<cali_obj_num; i++){
 		struct Cal_info *cal_info = (struct Cal_info *)malloc(sizeof(struct Cal_info));
 		memset(cal_info, 0, sizeof(struct Cal_info));
@@ -582,6 +638,7 @@ int32_t init_calibration(json_object *cali_obj)
 		// set calibration point name
 		cal_info->cal_id = config_get_string(array_obj, "NAME", "0G0");
 		list_add(&cal_info->list, &cal_info_root.list);
+		g_cal_info_num ++;
     }
 	// load offset
 	scal_offset = (int16_t*)malloc(sizeof(int16_t) * get_pha_ch_max());

@@ -39,9 +39,12 @@ typedef struct cmd_parse_obj{
 #define DESC_SIZE			128
 #define CMD_TOK       " "
 
+#define CMD_INVALID_PARAM "Invalid parameter\r\n"
+
 /* Exported functions --------------------------------------------------------*/ 
 CMD_PARSE_OBJ *parse_cmd(char *str, char *tok);
 int32_t free_cmd_obj(CMD_PARSE_OBJ *obj);
 int32_t cmd_obj_get_int(CMD_PARSE_OBJ *obj, uint32_t index);
+char *cmd_obj_get_str(CMD_PARSE_OBJ *obj, uint32_t index);
 
 #endif
