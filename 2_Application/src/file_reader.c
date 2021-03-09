@@ -66,7 +66,7 @@ LOCAL int16_t get_file_row(int fd)
 	return count;
 }
 
-void csv_read_file(const char *filename, File_reader file_reader, void *dest_obj)
+uint32_t csv_read_file(const char *filename, File_reader file_reader, void *dest_obj)
 {
 	char full_path[FILE_FULL_PATH_SIZE];
 	int read_len, put_len;
@@ -85,9 +85,12 @@ void csv_read_file(const char *filename, File_reader file_reader, void *dest_obj
 	if(fd<0){
 		APP_DEBUGF(FILEREADER_DEBUG | APP_DBG_LEVEL_WARNING | APP_DBG_TRACE,
 		    ("open file failed.\r\n"));
-		return;
+		return 0;
 	}
 	line = get_file_row(fd);
+	if(line ==0){
+		goto end;
+	}
 	lseek(fd, 0, SEEK_SET);
 	rb = rb_malloc("conf_rb", FILE_BUFFER_SIZE*2, FILE_BUFFER_SIZE*2);
 	if(!rb){
@@ -118,4 +121,6 @@ end:
 		rb_free(rb);
 		rb=NULL;
 	}
+
+	return line;
 }

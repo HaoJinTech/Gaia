@@ -22,7 +22,7 @@ void cmd_cpha(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun)
     send_buf_fun(dest_fd, "CPHA ");
     if(obj->num == 1){
       for(i=0; i<get_att_ch_max(); i++){
-        send_buf_fun(dest_fd, "%d %d;", i+1, get_att(i));
+        send_buf_fun(dest_fd, "%d %d;", i+1, get_pha(i));
       }
     // more than 3 word so set att.
     }else if(obj->num >=3){
@@ -39,7 +39,7 @@ void cmd_cpha(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun)
         val = cmd_obj_get_int(obj, i);
         i++;
         set_pha(ch, val);
-        send_buf_fun(dest_fd, "%d %d;", ch+1, get_att(ch));
+        send_buf_fun(dest_fd, "%d %d;", ch+1, get_pha(ch));
       }
     }else{
       goto failed_end;      
@@ -54,4 +54,4 @@ failed_end:
     free_cmd_obj(obj);
 }
 
-#define CMDOBJ_PHA {"CPHA", "set phase shifter using calibration table.", cmd_cpha}
+#define CMDOBJ_CPHA {"CPHA", "set phase shifter using calibration table.", cmd_cpha}
