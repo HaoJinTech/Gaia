@@ -34,21 +34,22 @@ typedef struct Message_Type{
 };
 #define SPI_DEBUG  APP_DBG_ON
 /* Private define ------------------------------------------------------------*/
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
-#define Empty_Msg_BufferLength 8
-#define ENDLINE {255, 255, 0}
-#define MAXPACKLENGTH 1024
+#define ARRAY_SIZE(a) 				(sizeof(a) / sizeof((a)[0]))
+#define Empty_Msg_BufferLength 		8
+#define MSG_HEAD 					0x02
+#define MSG_END 					0x0D
+#define MAXPACKLENGTH 				1024
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 #define DEVICE_NAME_LENTH  64
 static const char device[DEVICE_NAME_LENTH] = "/dev/spidev0.0";
 static uint32_t mode;
 static uint8_t bits = 8;
-static uint32_t speed = 10500000;
+static uint32_t speed = 21000000;
 static uint16_t delay;
 static int verbose;
 static char empty[Empty_Msg_BufferLength];
-
+//ACK包格式 0X02开头 0x04结尾
 struct list_head MessageQueueList;
 
 char *input_tx;
@@ -58,7 +59,6 @@ uint8_t *tx;
 uint8_t *rx;
 int size;
 /* Private function prototypes -----------------------------------------------*/
-
 
 //打印收发数据包的hex值和ascii值
 static void hex_dump(const void *src, size_t length, size_t line_size, char *prefix)
@@ -147,6 +147,8 @@ static void transfer(int fd, uint8_t const *tx, uint8_t const *rx, size_t len)
 		hex_dump(tx, len, 32, "TX");
 	hex_dump(rx, len, 32, "RX");
 }
+
+#if 0
 //打印帮助信息
 static void print_usage(const char *prog)
 {
@@ -170,7 +172,6 @@ static void print_usage(const char *prog)
 	exit(1);
 }
 //根据参数配置
-#if 0
 static void parse_opts(int argc, char *argv[])
 {
 	while (1) {
