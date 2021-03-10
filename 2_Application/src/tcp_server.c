@@ -156,7 +156,7 @@ LOCAL TCP_SOCK_BUFS *fd2rxbuf(uint32_t sock_fd)
     return NULL;
 }
 
-#define CMD_PRINT_SIZE   1024
+#define CMD_PRINT_SIZE   2048
 LOCAL int32_t send_message(uint32_t dest_fd, const char *fmt, ...)
 {
    	va_list args;

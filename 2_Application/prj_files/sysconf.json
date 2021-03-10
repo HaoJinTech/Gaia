@@ -66,5 +66,9 @@
                 "REMAP_FILE": "map_pha_128X16_2048_DT.csv"
             }
         ]
+    },
+
+    "CASE": {
+        "CASE_PATH": "case/"
     }
 }

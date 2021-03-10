@@ -16,9 +16,10 @@
 #include "subboard_manager.h"
 
 #include <stdlib.h>
+#include <unistd.h>
 
 /* Private typedef -----------------------------------------------------------*/
-/* command list */
+/* protocol cmds **************************************************************/
 /*
 0   | 1   |2		| 3         | 4 				 | 5   | 6
 253 | IDH |IDL	| CHOFFSETH | CHOFFSETL  | 255 | 255
@@ -83,12 +84,17 @@ used for load all pha values from main board , than will be saved into flash.
 #define CMD_TYPE_PHA_LOAD				233
 
 #define CMD_TYPE_UPDATE_VAL     232
+/******************************************************************************/
+
+#define START_LOAD_WAIT_TIME_S  3  
 /* Private define ------------------------------------------------------------*/
 #define RR485_DEBUG   APP_DBG_ON
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 BUS_DRIVER *init_bus = 0;  // used for subboard init, usually is rs232
+const char init_subboard_msg[] = {CMD_TYPE_INIT_EX, 0, 0, 0, 0, 255, 255};
+const char start_load_msg[] = {CMD_TYPE_START_LOAD, 255, 255};
 
 /* Private function prototypes -----------------------------------------------*/
 LOCAL int32_t radio_rack_485_init(void *param);
@@ -97,6 +103,7 @@ LOCAL int32_t radio_rack_485_write(BUS_DRIVER *bus, void *data);
 LOCAL void    *radio_rack_485_read(BUS_DRIVER *bus, int len);
 LOCAL int32_t radio_rack_485_ioctrl(PROTOCL_CTRL_MSG *ctrl);
 LOCAL int32_t radio_rack_485_close(void *param);
+
 LOCAL char *make_new_buf(long dest_type, int32_t *ch, int32_t *val, uint32_t ch_num, uint32_t val_num, uint32_t *out_len);
 
 /* Private functions ----------------------------------------------------------*/
@@ -156,7 +163,8 @@ LOCAL int32_t radio_rack_485_open(void *param)
   if(!init_bus)
     return RET_ERROR;
 
-
+  init_bus->write(init_subboard_msg, sizeof(init_subboard_msg));
+  
   return RET_OK;
 }
 
@@ -184,6 +192,12 @@ LOCAL int32_t radio_rack_485_write(BUS_DRIVER *bus, void *data)
       bus->write(buf, out_len);
       break;
     }
+    case DATA_TYPE_MCMMV:{
+      MCMMV *mcmmv = (MCMMV*)data;
+      buf = make_new_buf(mcmmv->dest_type, mcmmv->channel, mcmmv->value, mcmmv->ch_lenth, mcmmv->val_count, &out_len);
+      bus->write(buf, out_len);
+      break;
+    }
     case DATA_TYPE_CCMV:
       break;
     case DATA_TYPE_CCSV:
@@ -207,7 +221,21 @@ LOCAL void *radio_rack_485_read(BUS_DRIVER *bus, int len)
 
 LOCAL int32_t radio_rack_485_ioctrl(PROTOCL_CTRL_MSG *ctrl)
 {
-  return 0;
+  BUS_DRIVER *bus;
+
+  if(!ctrl) 
+    return RET_ERROR;
+
+  switch (ctrl->type){
+    case IO_CTRL_MSG_START_CASE_UPLOAD:
+      bus = (BUS_DRIVER *)ctrl->params;
+      bus->write(start_load_msg, sizeof(start_load_msg));
+      sleep(START_LOAD_WAIT_TIME_S); // thread sleep for 3s to wait for the sub board get ready.
+      break;
+    default:
+      return RET_ERROR;
+  }
+  return RET_OK;
 }
 
 LOCAL int32_t radio_rack_485_close(void *param)

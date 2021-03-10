@@ -64,6 +64,17 @@ typedef struct data_type_CCSV
     int32_t value;
 }CCSV;
 
+typedef struct data_type_MCMMV
+{
+    long data_type; // DATA_TYPE_MCMMV
+    long dest_type;
+
+    int32_t *channel;
+    int32_t ch_lenth;
+    int32_t *value;
+    int32_t val_count;  // the count of values that will send at same time, (if ATT & PHA enable, val_count = 2)
+}MCMMV;
+
 typedef struct data_type_CCMMV
 {
     long data_type; // DATA_TYPE_CCMMV
@@ -71,14 +82,14 @@ typedef struct data_type_CCMMV
 
     int32_t offset;
     int32_t ch_lenth;
-    int32_t val_count;  // the count of values that will send at same time, (if ATT & PHA enable, val_count = 2)
     int32_t *value;
+    int32_t val_count;  // the count of values that will send at same time, (if ATT & PHA enable, val_count = 2)
 }CCMMV;
 
 typedef struct protocl_ctrl_msg
 {
     uint32_t  type;
-    void      *val;
+    void      *params;
 }PROTOCL_CTRL_MSG;
 
 typedef int32_t (*subbd_protocol_init)(void *param);
@@ -106,6 +117,7 @@ extern SUBBD_PROTOCOL protocols[];
 extern uint32_t SUBBD_PROTOCOL_SIZE;
 
 /* Exported macro ------------------------------------------------------------*/
+#define IO_CTRL_MSG_START_CASE_UPLOAD        0x0019
 
 /* Exported functions --------------------------------------------------------*/ 
 

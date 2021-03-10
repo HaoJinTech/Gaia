@@ -178,6 +178,21 @@ int32_t subbd_send_CCSV(char dset, SUBBD_PROTOCOL *protocol_obj,
     return subbd_send_data(protocol_obj, bus_obj, data);   
 }
 
+int32_t subbd_send_MCMMV(char dset, SUBBD_PROTOCOL *protocol_obj, 
+    BUS_DRIVER *bus_obj, int32_t *channel, int32_t *value, int32_t val_count, uint32_t ch_lenth)
+{
+    MCMMV *data = (MCMMV *)malloc(sizeof(MCMMV));
+    data->data_type = DATA_TYPE_MCMMV;
+    data->dest_type = dset;
+
+    data->channel = channel;
+    data->ch_lenth = ch_lenth;
+    data->value = value;
+    data->val_count = val_count;
+
+    return subbd_send_data(protocol_obj, bus_obj, data);   
+}
+
 int32_t subbd_send_CCMMV(char dset, SUBBD_PROTOCOL *protocol_obj, 
     BUS_DRIVER *bus_obj, int32_t ch_offset, int32_t *value, int32_t val_count, uint32_t ch_lenth)
 {
