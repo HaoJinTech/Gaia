@@ -195,7 +195,7 @@ LOCAL void check_key_and_find_cmd_entry(CMD_MSG *msg)
 {
     uint32_t i=0;
     for(i=0; i<CMD_OBJ_NUM-1; i++){
-        if(check_key(msg->recv_buf, cmd_objs[i].key, sizeof(cmd_objs[i].key)-1)){
+        if(check_key(msg->recv_buf, cmd_objs[i].key, strlen(cmd_objs[i].key))){
             break;
         }
     }

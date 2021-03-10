@@ -69,7 +69,7 @@ int32_t set_att(uint32_t ch, int32_t val)
 
     if(ch >= g_ch_max || val > g_val_max) 
         return RET_ERROR;
-    g_att_vals[0] = val;
+    g_att_vals[ch] = val;
     att = att_get_step_offset(val);
 
     // remap the channel

@@ -79,7 +79,7 @@ LOCAL void get_freq_data(struct rb *rb, struct Cal_info *cal_info, uint16_t line
 LOCAL int16_t calc_remainder(int16_t num, uint16_t rem);
 LOCAL struct Cal_info *get_cal_info_by_iter(uint16_t i);
 LOCAL uint8_t getMapPosition(struct Cal_info *cal_info, int32_t val);
-LOCAL int16_t cal_info_id2iter(char *id);
+LOCAL int16_t cal_info_id2iter(const char *id);
 
 /* Private functions ---------------------------------------------------------*/
 // att inf pha cal data.
@@ -324,7 +324,7 @@ LOCAL uint8_t getMapPosition(struct Cal_info *cal_info, int32_t val)
 	return 0;
 }
 
-LOCAL int16_t cal_info_id2iter(char *id)
+LOCAL int16_t cal_info_id2iter(const char *id)
 {
 	uint16_t count = 0;
 	struct Cal_info *iter;
@@ -426,7 +426,7 @@ uint32_t get_cali_info_num(void)
 	return g_cal_info_num;
 }
 
-char *get_cali_info_name_by_index(uint32_t i)
+const char *get_cali_info_name_by_index(uint32_t i)
 {
 	struct Cal_info *cal_info = NULL;
 
@@ -458,8 +458,8 @@ int32_t calibration_proc(uint32_t ch, int32_t att_val, int32_t pha_val, int32_t 
 	// step1:  offset
 	val += scal_offset[ch];
 	
-	// step2:  attinf
-	if(s_att_effect && cal_info->point_num){
+	// step2:  calibrate the pha based on the att
+	if(s_att_effect && cal_info->point_num && cal_info->att_point){
 		for(j=1; j<cal_info->point_num; j++){
 			if(cal_info->att_point[j-1]<= att_val && cal_info->att_point[j]> att_val){
 				break;
@@ -469,11 +469,11 @@ int32_t calibration_proc(uint32_t ch, int32_t att_val, int32_t pha_val, int32_t 
 		val += offset;
 	}
 
-	// step3:  remainder
+	// step3:  remainder to put the value between 0 and max
 	val = calc_remainder(val, cal_info->pha_map_item_count);
 	
-	// step4:  phainf
-	if(s_pha_effect && cal_info->point_num_att){
+	// step4:  calibrate the att based on the pha
+	if(s_pha_effect && cal_info->point_num_att && cal_info->pha_point){
 		for(j=1; j<cal_info->point_num_att; j++){
 			if(cal_info->pha_point[j-1]<= val && cal_info->pha_point[j]> val){
 				break;
@@ -485,11 +485,11 @@ int32_t calibration_proc(uint32_t ch, int32_t att_val, int32_t pha_val, int32_t 
 		}
 	}
 
-	// step5:  phamap
+	// step5:  find the pha value from the pha sheet
 	val = cal_info->pha_map_cal[val];
 
-	// step6:  stretch (optional)
-	if(stretch_point){
+	// step6:  stretch the pha value based on the stretch point
+	if(s_stretch_enable && stretch_point && cal_info->stretch){
 		uint8_t map_min_i = getMapPosition(cal_info, val);
 		int16_t map_min = cal_info->stretch[map_min_i];
 		int16_t map_max = cal_info->stretch[map_min_i+1];
@@ -503,41 +503,39 @@ int32_t calibration_proc(uint32_t ch, int32_t att_val, int32_t pha_val, int32_t 
 	return val;
 }
 
-int32_t cali_set_freq(uint32_t ch, char *freq_str)
+int32_t cali_set_freq(uint32_t ch, const char *freq_str)
 {
 	struct Cal_info *cal_info;
 	int16_t cal_inter;
 	cal_inter = cal_info_id2iter(freq_str);
 
 	if(-1 == cal_inter){
-		APP_DEBUGF(CONF_DEBUG | APP_DBG_LEVEL_WARNING ,
+		APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_WARNING ,
 			("can not find calibration info.(ch = %d, id = %s)\r\n", ch, freq_str));
 		return RET_ERROR;
 	}
 
 	cal_info = get_cal_info_by_iter(cal_inter);
 	if(!cal_info){
-		APP_DEBUGF(CONF_DEBUG | APP_DBG_LEVEL_WARNING ,
-			("can not find calibration info.(id = %s)\r\n", cal_inter));
+		APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_WARNING ,
+			("can not find calibration info.(id = %d)\r\n", cal_inter));
 		return RET_ERROR;
 	}
 	scal_id[ch] = cal_inter;
 
 	refresh_pha_val(ch);
+	return RET_OK;
 }
 
-char *cali_get_freq(uint32_t ch)
+const char *cali_get_freq(uint32_t ch)
 {
-	struct Cal_info *cal_info;
+	struct Cal_info *cal_info = NULL;
 	cal_info = get_cal_info_by_iter(scal_id[ch]);
-	if(!cal_info){
-		cmd_kprintf(ts, "%d F;", i+1);
-		APP_DEBUGF(CONF_DEBUG | APP_DBG_LEVEL_WARNING | APP_DBG_TRACE,
-		("can not find calibration info.(ch = %d)\r\n", ch));
-		continue;
-	}else{
+	if(cal_info){
 		return cal_info->cal_id;
 	}
+	APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_WARNING,
+		("can not find calibration info.(ch = %d)\r\n", ch));
 	return NULL;
 }
 
@@ -578,6 +576,7 @@ void save_cscd_file(void)
 int32_t init_calibration(json_object *cali_obj)
 {
     int i =0, cali_obj_num = 0;
+	uint32_t line;
     const char *filename;
 
 	char full_path[FILE_PATH_LEN];
@@ -604,7 +603,8 @@ int32_t init_calibration(json_object *cali_obj)
 			strncpy(full_path, relative_path, FILE_PATH_LEN);
 			strncat(full_path, filename, FILE_PATH_LEN - strlen(relative_path));
 			APP_DEBUGF(CALI_DEBUG | APP_DBG_TRACE, ("load file:(%s).\r\n", full_path));
-			csv_read_file(full_path, (File_reader)get_inf_cal_data, cal_info);
+			line = csv_read_file(full_path, (File_reader)get_inf_cal_data, cal_info);
+			if(0 == line) s_att_effect = 0;
 		}
 		// load 2G6_attinf.csv 
 		s_pha_effect = config_get_bool(array_obj, "ADJ_ATT_BY_PHA", 0);
@@ -613,7 +613,8 @@ int32_t init_calibration(json_object *cali_obj)
 			strncpy(full_path, relative_path, FILE_PATH_LEN);
 			strncat(full_path, filename, FILE_PATH_LEN - strlen(relative_path));
 			APP_DEBUGF(CALI_DEBUG | APP_DBG_TRACE, ("load file:(%s).\r\n", full_path));
-			csv_read_file(full_path, (File_reader)get_attinf_cal_data, cal_info);
+			line = csv_read_file(full_path, (File_reader)get_attinf_cal_data, cal_info);
+			if(0 == line) s_pha_effect = 0;
 		}
 		// load 2G6_pha.csv 
 		s_pha_by_table_enable = config_get_bool(array_obj, "ADJ_PHA_BY_TABLE", 0);
@@ -622,7 +623,8 @@ int32_t init_calibration(json_object *cali_obj)
 			strncpy(full_path, relative_path, FILE_PATH_LEN);
 			strncat(full_path, filename, FILE_PATH_LEN - strlen(relative_path));
 			APP_DEBUGF(CALI_DEBUG | APP_DBG_TRACE, ("load file:(%s).\r\n", full_path));
-			csv_read_file(full_path, (File_reader)get_pha_cal_data, cal_info);
+			line = csv_read_file(full_path, (File_reader)get_pha_cal_data, cal_info);
+			if(0 == line) s_pha_by_table_enable = 0;
 		}
 		// load 2G6_stretch.csv
 		s_stretch_enable = config_get_bool(array_obj, "ADJ_PHA_BY_STRETCH", 0);
@@ -632,11 +634,12 @@ int32_t init_calibration(json_object *cali_obj)
 			strncpy(full_path, relative_path, FILE_PATH_LEN);
 			strncat(full_path, filename, FILE_PATH_LEN - strlen(relative_path));
 			APP_DEBUGF(CALI_DEBUG | APP_DBG_TRACE, ("load file:(%s).\r\n", full_path));
-			csv_read_file(full_path, (File_reader)get_pha_stretch_data, cal_info);
+			line = csv_read_file(full_path, (File_reader)get_pha_stretch_data, cal_info);
+			if(0 == line) s_stretch_enable = 0;
 		}
 
 		// set calibration point name
-		cal_info->cal_id = config_get_string(array_obj, "NAME", "0G0");
+		cal_info->cal_id = config_get_string(array_obj, "NAME", "NULL");
 		list_add(&cal_info->list, &cal_info_root.list);
 		g_cal_info_num ++;
     }
@@ -644,7 +647,7 @@ int32_t init_calibration(json_object *cali_obj)
 	scal_offset = (int16_t*)malloc(sizeof(int16_t) * get_pha_ch_max());
 	if(!scal_offset){
 		APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_SERIOUS ,
-			("get_phase_cal_config: scal_offset malloc failed.\r\n"));
+			("scal_offset malloc failed.\r\n"));
 		return RET_ERROR;
 	}
 	memset(scal_offset, 0, sizeof(int16_t) * get_pha_ch_max());
@@ -652,7 +655,7 @@ int32_t init_calibration(json_object *cali_obj)
 	filename = config_get_string(cali_obj, "CALI_OFFSET_FILE", "pha_freq");
 	if(!filename){
 		APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_WARNING,
-			("get_phase_cal_config: unspecified calibreation phase shifter offset file name.\r\n"));
+			("unspecified calibreation phase shifter offset file name.\r\n"));
 		return RET_ERROR;
 	}
 	strncpy(full_path, relative_path, FILE_PATH_LEN);
@@ -663,7 +666,7 @@ int32_t init_calibration(json_object *cali_obj)
 	scal_id = (uint8_t*)malloc(sizeof(uint8_t) * get_pha_ch_max());
 	if(!scal_id){
 		APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_SERIOUS,
-			("get_phase_cal_config: cal_id malloc failed.\r\n"));
+			("cal_id malloc failed.\r\n"));
 		return RET_ERROR;
 	}
 	memset(scal_id, 0, sizeof(uint8_t) * get_pha_ch_max());
@@ -671,7 +674,7 @@ int32_t init_calibration(json_object *cali_obj)
 	cali_pt_filename = config_get_string(cali_obj, "CALI_SAVED_POINTS_FILE", "pha_freq.csv");
 	if(!cali_pt_filename){
 		APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_WARNING ,
-			("get_phase_cal_config: unspecified calibreation phase shifter frequnce file name.\r\n"));
+			("unspecified calibreation phase shifter frequnce file name.\r\n"));
 		return RET_ERROR;
 	}
 	strncpy(full_path, relative_path, FILE_PATH_LEN);

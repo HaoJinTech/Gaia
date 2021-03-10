@@ -24,11 +24,11 @@ int32_t calibration_is_enabled(void);
 int32_t calibration_proc(uint32_t ch, int32_t att, int32_t pha, int32_t *o_attval);
 void save_cscd_file(void);
 
-char *cali_get_freq(uint32_t ch);
-int32_t cali_set_freq(uint32_t ch, char *freq_str);
+const char *cali_get_freq(uint32_t ch);
+int32_t cali_set_freq(uint32_t ch, const char *freq_str);
 
 uint32_t get_cali_info_num(void);
-char *get_cali_info_name_by_index(uint32_t i);
+const char *get_cali_info_name_by_index(uint32_t i);
 
 int32_t init_calibration(json_object *json_obj);
 
