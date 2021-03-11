@@ -4,7 +4,7 @@
   * @author  
   * @version V0.1.0
   * @date    02-03-2021
-  * @brief   Basic att cmd
+  * @brief   
   *       
 	********** Copyright (C), 2014-2015,HJ technologies **************************
 	*/

@@ -20,6 +20,8 @@
 #include "cmds/CRCD.c"
 #include "cmds/CSCD.c"
 #include "cmds/CLCD.c"
+
+#include "cmds/CSLS.c"
 // TODO: add new cmd src file here
 
 CMD_OBJ cmd_objs[] = {
@@ -29,6 +31,8 @@ CMD_OBJ cmd_objs[] = {
     CMDOBJ_CRCD,
     CMDOBJ_CSCD,
     CMDOBJ_CLCD,
+
+    CMDOBJ_CSLS,
     // TODO: add new cmds here
 
     CMDOBJ_UNKNOW

@@ -24,7 +24,7 @@ $(OBJ)/%.o: $(SRCDIR)/%.$(EXTENSION)
 	$(CC) -c $(CPPFLAGS) $< -o $@ $(CFLAGS)
 
 $(OBJ)/%.o: $(SRCDIR)/bll/%.$(EXTENSION)
-	$(CC) -c $(CPPFLAGS) $< -o $@ $(CFLAGS) -lpthread
+	$(CC) -c $(CPPFLAGS) $< -o $@ $(CFLAGS)
 
 
 .PHONY:clean

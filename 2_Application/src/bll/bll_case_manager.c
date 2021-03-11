@@ -19,6 +19,7 @@
 
 #include <semaphore.h>
 #include <pthread.h>
+#include <sys/stat.h>
 #include <sys/msg.h>
 #include <sys/ipc.h>
 #include <fcntl.h>
@@ -26,15 +27,9 @@
 #include <string.h>
 #include <signal.h>
 #include <time.h>
+#include <dirent.h>
 
 /* Private typedef -----------------------------------------------------------*/
-typedef enum Case_state{
-    CASE_STATE_UNLOADED     =0x0000,
-    CASE_STATE_STOP         =0x0001,
-    CASE_STATE_RUN          =0x0002,
-    CASE_STATE_PAUSE        =0x0003,
-    CASE_STATE_BUSY         =0x0004
-} CASE_STATE;
 
 typedef enum Case_mission_item{
 	CASE_MISSION_LOAD 	    =0x0000,
@@ -135,6 +130,8 @@ struct Case_frame_exe_item
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 LOCAL const char 	*s_folder;
+#define CASE_FULL_PATH_LEN  256
+LOCAL char          case_full_path[CASE_FULL_PATH_LEN];
 LOCAL pthread_t 	cs_thread;
 LOCAL int 			   s_mq_cs;
 LOCAL CASE_ITEM		   case_item_root;
@@ -168,6 +165,7 @@ LOCAL void case_continue(struct Case_item *case_item);
 LOCAL void unload_case(struct Case_item *case_item);
 LOCAL uint8_t case_end(struct Case_item *case_item);
 
+LOCAL struct Case_item *get_case_item(char *name);
 LOCAL void case_frame_sender(union sigval param);
 LOCAL uint32_t reload_buffer(struct Case_item* case_item, int fd);
 LOCAL char* split_word(char *src, char **inner_ptr, uint8_t *new_line);
@@ -717,6 +715,21 @@ LOCAL void case_continue(struct Case_item *case_item)
 	}
 }
 
+LOCAL struct Case_item *get_case_item(char *name)
+{
+	struct Case_item *iter;
+	uint32_t case_name_len = 0, name_len = 0;
+    list_for_each_entry(iter, &case_item_root.list, list){
+		case_name_len = strlen(iter->case_name);
+		name_len = strlen(name);
+		if(name_len == case_name_len &&
+		0 == strncmp(iter->case_name, name, case_name_len)){
+            return iter;
+		}
+    }
+
+	return NULL;
+}
 
 LOCAL void unload_case(struct Case_item *case_item)
 {
@@ -793,7 +806,7 @@ LOCAL void *case_runner_thread_entry(void* parameter)
 }
 
 /* Public functions ----------------------------------------------------------*/
-void init_model_case_manager(json_object *case_json_obj)
+int32_t init_model_case_manager(json_object *case_json_obj)
 {
 	int protocol_id = 0;
     int bus_id = 0;
@@ -801,7 +814,9 @@ void init_model_case_manager(json_object *case_json_obj)
     APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE, ("initialize case manager.\r\n"));
     s_folder = config_get_string(case_json_obj, "CASE_PATH", "case/");
 
-    protocol_id =   config_get_int(case_json_obj, "CASE_PROTOCOL", PROTOCOL_ID_RR485);
+	snprintf(case_full_path, CASE_FULL_PATH_LEN, "%s/%s", PRJ_FILE_PATH, s_folder);
+
+    protocol_id = config_get_int(case_json_obj, "CASE_PROTOCOL", PROTOCOL_ID_RR485);
     if(protocol_id > SUBBD_PROTOCOL_SIZE) protocol_id = PROTOCOL_ID_RR485;
     g_protocol_obj = &protocols[protocol_id];
 
@@ -812,4 +827,99 @@ void init_model_case_manager(json_object *case_json_obj)
     init_runner_thread();
     
 	INIT_LIST_HEAD(&case_item_root.list);
+	
+	return RET_OK;
+}
+
+CASE_STATE get_case_state(char *case_name, char *out_state, uint32_t strlen)
+{
+	CASE_ITEM *case_item = NULL;
+	case_item = get_case_item(case_name);
+
+	if(!case_item){
+		if(out_state){
+			snprintf(out_state, strlen, "UNLOAD");
+		}
+		return CASE_STATE_UNLOADED;
+	}else{
+		switch (case_item->state){
+		case CASE_STATE_STOP:
+			if(out_state){
+				snprintf(out_state, strlen, "STOP");
+			}			
+			break;
+		case CASE_STATE_RUN:
+			if(out_state){
+				snprintf(out_state, strlen, "RUN");
+			}			
+			break;
+		case CASE_STATE_BUSY:
+			if(out_state){
+				snprintf(out_state, strlen, "BUSY");
+			}			
+			break;
+		case CASE_STATE_PAUSE:
+			if(out_state){
+				snprintf(out_state, strlen, "PAUSE");
+			}
+			break;	
+		default:
+			if(out_state){
+				snprintf(out_state, strlen, "UNKNOW");
+			}
+			break;
+		}
+	}
+
+	return case_item->state;
+}
+
+DIR* search_folder_start(void)
+{
+	return opendir(case_full_path);
+}
+
+int32_t search_folder_get_name(DIR* dirp, char *out_name, uint32_t strlen, uint32_t *out_filesize)
+{
+	struct dirent* entry;
+#define LINE_BUF_SIZE		512
+	char line_buffer[LINE_BUF_SIZE];
+	struct stat s;
+
+	while (1){
+		entry = readdir(dirp);
+		if (entry == NULL) return RET_ERROR;
+		snprintf(line_buffer, LINE_BUF_SIZE, "%s/%s", case_full_path, entry->d_name);
+		if (stat(line_buffer, &s) == 0){
+			if(!(s.st_mode & S_IFDIR) && 
+            (strstr(entry->d_name, FILE_EXTENSION_CAPITAL) || 
+            strstr(entry->d_name, FILE_EXTENSION_LOWERCASE))){
+				if(strstr(entry->d_name, FILE_EXTENSION_MIDDLE)){
+					continue;
+				}
+				if(out_name){
+					strncpy(out_name, entry->d_name, strlen);
+				}
+				if(out_filesize){
+					*out_filesize = s.st_size;
+				}
+				return RET_OK;
+			}
+		}else{
+			return RET_ERROR;
+		}
+	}
+	return RET_ERROR;
+}
+
+void search_folder_end(DIR *dirp)
+{
+	if(dirp){
+		closedir(dirp);
+	}
+}
+
+const char *get_case_full_path(void)
+{
+	return case_full_path;
 }
