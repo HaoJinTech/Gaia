@@ -119,6 +119,16 @@ extern uint32_t SUBBD_PROTOCOL_SIZE;
 /* Exported macro ------------------------------------------------------------*/
 #define IO_CTRL_MSG_START_CASE_UPLOAD        0x0019
 
+
+/* DEST TYPE */
+#define DEST_ATT            0x01
+#define DEST_PHA            0x02
+#define DEST_ATT_PHA        0x03
+#define DEST_SWITCH         0x10
+#define DEST_UPLD_ATT       0x21
+#define DEST_UPLD_PHA       0x22
+#define DEST_UPLD_ATT_PHA   0x23
+
 /* Exported functions --------------------------------------------------------*/ 
 
 #endif

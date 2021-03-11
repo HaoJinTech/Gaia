@@ -173,6 +173,9 @@ LOCAL int32_t radio_rack_485_write(BUS_DRIVER *bus, void *data)
   long data_type = *(long*)data;
   char *buf = 0;
   uint32_t out_len;
+
+  APP_ASSERT("bus == NULL", bus);
+  APP_ASSERT("data == NULL", data);
   
 	APP_DEBUGF(RR485_DEBUG | APP_DBG_TRACE, ("write data(type:%ld).\r\n", data_type));
 	
@@ -216,6 +219,8 @@ LOCAL int32_t radio_rack_485_write(BUS_DRIVER *bus, void *data)
 
 LOCAL void *radio_rack_485_read(BUS_DRIVER *bus, int len)
 {
+  APP_ASSERT("bus == NULL", bus);
+
   return 0;
 }
 
@@ -244,11 +249,11 @@ LOCAL int32_t radio_rack_485_close(void *param)
 }
 
 /* Public functions ----------------------------------------------------------*/
-#define RR485 {PROTOCOL_ID_RR485, \
-        radio_rack_485_init, \
-        radio_rack_485_open, \
-        radio_rack_485_write, \
-        radio_rack_485_read, \
-        radio_rack_485_ioctrl,\
-        radio_rack_485_close}
+#define RR485 {PROTOCOL_ID_RR485,   \
+              radio_rack_485_init,  \
+              radio_rack_485_open,  \
+              radio_rack_485_write, \
+              radio_rack_485_read,  \
+              radio_rack_485_ioctrl,\
+              radio_rack_485_close}
 

@@ -161,7 +161,7 @@ LOCAL void case_runner_thread_entry(void* parameter);
 LOCAL void case_frame_exe(CASE_ITEM *case_item);
 LOCAL struct Case_item *upload_case(char *name);
 
-
+LOCAL void case_frame_sender(void *param);
 LOCAL int16_t reload_buffer(struct Case_item* case_item, int fd);
 LOCAL char* split_word(char *src, char **inner_ptr, uint8_t *new_line);
 LOCAL char* case_get_word(struct Case_item *case_item, uint8_t *new_line, uint16_t *count);
@@ -334,19 +334,22 @@ LOCAL int8_t upload_to_subboard(struct Case_item *case_item)
 	g_protocol_obj->ioctrl(&ioctrl_msg);
 
 	case_item->val_count = 1;
-	if(case_item->case_type & CASE_TYPE_ATT)
+	if(case_item->case_type & CASE_TYPE_ATT){
+		temp_att = (int16_t*)malloc(sizeof(int16_t) * (case_item->ch_max+1));
 		case_item->val_count += case_item->ch_max;
-	if(case_item->case_type & CASE_TYPE_PHA)
+	}
+	if(case_item->case_type & CASE_TYPE_PHA){
+		temp_pha = (int16_t*)malloc(sizeof(int16_t) * (case_item->ch_max+1));
 		case_item->val_count += case_item->ch_max;
-	temp_buf = (int16_t*) malloc(sizeof(int16_t) * (case_item->val_count+1));
+	}
+	
 	if(!temp_buf){
 		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_SERIOUS,
-			("upload_to_subboard: temp_buf malloc failed.\r\n"));
+			("temp_buf malloc failed.\r\n"));
 		return CASE_ERROR;
 	}
 	case_item->line_max = 0;
 	while(1){
-
 		/* this c_val is interval(ms) for every line */
 		c_val = case_get_word(case_item, &new_line, &count);
 		if(!c_val){
@@ -354,44 +357,60 @@ LOCAL int8_t upload_to_subboard(struct Case_item *case_item)
 				(" middle file created.\r\n"));
 			break;
 		}
-		index = 0;
-		temp_buf[index] = atoi(c_val);
-		case_hs_add_line_interval(case_item, temp_buf[index]);
-		index +=1;
+		/* line_max is keep increasing during the loading proccess, set the line delay */
+		case_item->interval_hs_arr[case_item->line_max] = atoi(c_val);
+		index =0;
 		for(i=0; i<case_item->ch_max; i++){
 			if(case_item->case_type & CASE_TYPE_ATT){
 				if(new_line == 1){
-					temp_buf[index] = 0;
+					temp_att[index] = 0;
 				}else{
 					c_val = case_get_word(case_item, &new_line, &count);
-					temp_buf[index] = atoi(c_val);
+					temp_att[index] = atoi(c_val);
 				}
 				index +=1;
 			}
 			if(case_item->case_type & CASE_TYPE_PHA){
 				if(new_line == 1){
-					temp_buf[index] = 0;
+					temp_pha[index] = 0;
 				}else{
 					c_val = case_get_word(case_item, &new_line, &count);
-					temp_buf[index] = atoi(c_val);
+					temp_pha[index] = atoi(c_val);
 				}
 				index +=1;
 			}
 		}
 
+		/* get new line */
 		while(!new_line)
 			case_get_word(case_item, &new_line, &count);
 		
 		/* send data to sub board after */
-		sendDataToSubboard(case_item, temp_buf);
-#ifndef SUBBOARD_SRAM
-		rt_thread_delay(200);
-#endif
+		subbd_send_MCMV(DEST_UPLD_ATT, g_protocol_obj, g_bus_obj, case_item->cha_array, temp_att, case_item->ch_max);
+		subbd_send_MCMV(DEST_UPLD_PHA, g_protocol_obj, g_bus_obj, case_item->cha_array, temp_pha, case_item->ch_max);		
+
 		case_item->line_max += 1;
 	}
 
-	rt_free(temp_buf);
+	free(temp_att);
+	free(temp_pha);
 	return CASE_ERROR_OK;
+}
+
+LOCAL void case_frame_sender(void *param)
+{
+	rt_err_t err;
+	struct Case_item *case_item = (struct Case_item *)param;
+
+	APP_ASSERT("case_frame_sender: param == NULL.\r\n",param);
+
+	err = rt_mq_send(s_mq_cs, &(case_item->exe_mis), sizeof(struct Case_mission*));
+	if(err < 0){
+		APP_DEBUGF(RFDEV_DEBUG | APP_DBG_TRACE | APP_DBG_LEVEL_SEVERE, 
+			("case_frame_sender: msg send failed.(code:%d)\r\n",err));
+	}
+
+	return ;
 }
 
 LOCAL struct Case_item *upload_case(char *name)
@@ -497,6 +516,19 @@ LOCAL struct Case_item *upload_case(char *name)
 			break;
 		}
 	}
+    struct sigevent sev;
+	memset(&sev, 0, sizeof(struct sigevent));
+	sev.sigev_notify = SIGEV_THREAD;
+    sev.sigev_signo = SIGRTMIN;
+    sev.sigev_value.sival_ptr = "case_timer";
+    sev.sigev_notify_function = case_frame_sender;
+    sev.sigev_notify_attributes = case_item;
+
+    /* create timer */
+    if (timer_create (CLOCK_REALTIME, &sev, &case_item->timer) == -1){
+    	APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_SERIOUS, ("timer_create failed.\r\n"));		
+    	goto end_failed;
+    }
 	
 	INIT_LIST_HEAD(&case_item->list);
     list_add(&case_item->list, &case_item_root.list);
@@ -517,26 +549,56 @@ LOCAL struct Case_item *upload_case(char *name)
 	return case_item;
 end_failed:	
 	if(case_item->exe_mis){
-		rt_free(case_item->exe_mis);
+		free(case_item->exe_mis);
 		case_item->exe_mis = NULL;
 	}
 	if(case_item->cha_array){
-		rt_free(case_item->cha_array);
+		free(case_item->cha_array);
 		case_item->cha_array = NULL;
 	}
 	if(case_item->buffer){
-		rt_free(case_item->buffer);
+		free(case_item->buffer);
 		case_item->buffer = NULL;
 	}
 	if(case_item->full_path){
-		rt_free(case_item->full_path);
+		free(case_item->full_path);
 		case_item->full_path = NULL;
 		full_path = NULL;
 	}
 	if(case_item)
-		rt_free(case_item);
+		free(case_item);
 	close(fd);
 	return NULL;
+}
+
+LOCAL int16_t case_start(struct Case_item *case_item)
+{
+	rt_err_t err;
+	uint16_t time_i = 0;
+	int16_t res;
+
+	APP_ASSERT("case_start: Free pointer.\r\n", case_item!= NULL);
+	
+	if(case_item->timer == NULL){
+		case_item->timer = rt_timer_create(case_item->case_name,
+												case_frame_sender, (void*)case_item,	1, RT_TIMER_FLAG_ONE_SHOT);
+	}else{
+		rt_timer_control(case_item->timer, RT_TIMER_CTRL_SET_TIME, (void*)&time_i);
+	}
+	if(!case_item->flag_hspeed){
+	/* buffer loader begin */
+		res = case_buffer_load_start(case_item);
+		if(res < 0){
+			APP_DEBUGF(CASE_DEBUG | APP_DBG_LEVEL_SERIOUS,
+				("case_start: case_buffer_load_start failed.\r\n"));
+			return CASE_ERROR;
+		}
+	}
+
+	case_item->state = CASE_STATE_RUN;
+	err = rt_timer_start(case_item->timer);
+	
+	return err;
 }
 
 LOCAL void case_runner_thread_entry(void* parameter)
@@ -562,9 +624,9 @@ LOCAL void case_runner_thread_entry(void* parameter)
 				upload_case((char*)case_mission.data);
 				free(case_mission.data);
 			break;
-			case CASE_MISSION_UNLD:
+/*			case CASE_MISSION_UNLD:
 				unload_case((CASE_ITEM *)case_mission.data);
-			break;
+			break;*/
 			case CASE_MISSION_RUN:
 				case_start((CASE_ITEM *)case_mission.data);
 			break;
