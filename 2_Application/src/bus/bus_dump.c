@@ -34,7 +34,7 @@ int32_t bus_dump_open(void)
     return RET_OK;
 }
 
-int32_t bus_dump_write(char *data, uint32_t len)
+int32_t bus_dump_write(const char *data, uint32_t len)
 {
 	APP_DEBUGF(BUS_DUMP_DEBUG | APP_DBG_TRACE, ("write data:0x%x, len:%d.\r\n",(int32_t)data,len));
     APP_DEBUGF_HEX(BUS_DUMP_DEBUG | APP_DBG_TRACE, data, len);

@@ -15,6 +15,7 @@
 #include "subbd_protocol.h"
 #include "subboard_manager.h"
 
+#include <stdarg.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -100,8 +101,8 @@ const char start_load_msg[] = {CMD_TYPE_START_LOAD, 255, 255};
 LOCAL int32_t radio_rack_485_init(void *param);
 LOCAL int32_t radio_rack_485_open(void *param);
 LOCAL int32_t radio_rack_485_write(BUS_DRIVER *bus, void *data);
-LOCAL void    *radio_rack_485_read(BUS_DRIVER *bus, int len);
-LOCAL int32_t radio_rack_485_ioctrl(PROTOCL_CTRL_MSG *ctrl);
+LOCAL void   *radio_rack_485_read(BUS_DRIVER *bus, int len);
+LOCAL int32_t radio_rack_485_ioctrl(int request, ...);
 LOCAL int32_t radio_rack_485_close(void *param);
 
 LOCAL char *make_new_buf(long dest_type, int32_t *ch, int32_t *val, uint32_t ch_num, uint32_t val_num, uint32_t *out_len);
@@ -224,22 +225,35 @@ LOCAL void *radio_rack_485_read(BUS_DRIVER *bus, int len)
   return 0;
 }
 
-LOCAL int32_t radio_rack_485_ioctrl(PROTOCL_CTRL_MSG *ctrl)
+LOCAL int32_t radio_rack_485_ioctrl(int request, ...)
 {
   BUS_DRIVER *bus;
+  va_list arg_ptr;
 
-  if(!ctrl) 
-    return RET_ERROR;
+  va_start(arg_ptr, request);
 
-  switch (ctrl->type){
+  switch (request){
     case IO_CTRL_MSG_START_CASE_UPLOAD:
-      bus = (BUS_DRIVER *)ctrl->params;
-      bus->write(start_load_msg, sizeof(start_load_msg));
-      sleep(START_LOAD_WAIT_TIME_S); // thread sleep for 3s to wait for the sub board get ready.
+      bus = va_arg(arg_ptr, BUS_DRIVER*);
+      if(bus){
+        bus->write(start_load_msg, sizeof(start_load_msg));
+        sleep(START_LOAD_WAIT_TIME_S); // thread sleep for 3s to wait for the sub board get ready.
+      }
+      break;
+    case IO_CTRL_MSG_UPDATE_CASE_LINE:{
+        uint32_t line_num;
+        bus = va_arg(arg_ptr, BUS_DRIVER*);
+        if(bus){
+          line_num = va_arg(arg_ptr, uint32_t);
+          char line_update_msg[] = {CMD_TYPE_UPDATE_VAL, ((line_num >> 7) & 0x7f), (line_num & 0x7f), 255, 255};
+          bus->write(line_update_msg, sizeof(line_update_msg));
+        }
+      }
       break;
     default:
-      return RET_ERROR;
+      break;
   }
+  va_end(arg_ptr);
   return RET_OK;
 }
 

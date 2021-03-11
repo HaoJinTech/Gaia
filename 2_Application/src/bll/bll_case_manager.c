@@ -17,8 +17,6 @@
 #include "sys_config.h"
 #include "subboard_manager.h"
 
-#include <time.h>
-#include <signal.h>  
 #include <semaphore.h>
 #include <pthread.h>
 #include <sys/msg.h>
@@ -26,6 +24,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <signal.h>
+#include <time.h>
 
 /* Private typedef -----------------------------------------------------------*/
 typedef enum Case_state{
@@ -68,9 +68,9 @@ typedef struct Case_item{
     /* file stuff */
     int                     fd;              // file handler
     char                    *full_path;      // file full path
-    uint16_t                ch_max;          // channel number
-    uint16_t                *cha_array;      // 
-    uint16_t                first_line;      // 
+    uint32_t                ch_max;          // channel number
+    int32_t                *cha_array;      // 
+    uint32_t                first_line;      // 
     uint32_t                seek_cur;        // 
     
     /* buffer stuff */
@@ -80,15 +80,15 @@ typedef struct Case_item{
     /* middle file */ /* create when the case file has been loaded. */
     int                 mid_fd;              // 
     char                *mid_full_path;      // 
-    uint16_t            *val_array;          // 
-    uint16_t            val_count;           //
+    uint32_t            *val_array;          // 
+    uint32_t            val_count;           //
     uint32_t            line_max;            // 
 #define VAL_ARRAY_LENGTH    4                //
-    uint16_t            mid_read_pt;         //
-    uint16_t            mid_write_pt;        //
+    uint32_t            mid_read_pt;         //
+    uint32_t            mid_write_pt;        //
     pthread_t           bf_ld_th;            //
-    sem_t               bf_ld_sem;           //
-    sem_t               bf_ld_rd_sem;        //
+    sem_t               *bf_ld_sem;           //
+    sem_t               *bf_ld_rd_sem;        //
     uint32_t            current_line;        //
 
     /* extral information of hspeed mode */
@@ -134,37 +134,44 @@ struct Case_frame_exe_item
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-LOCAL char 			*s_folder;
+LOCAL const char 	*s_folder;
 LOCAL pthread_t 	cs_thread;
-LOCAL int 			s_mq_cs;
-LOCAL CASE_ITEM			case_item_root;
+LOCAL int 			   s_mq_cs;
+LOCAL CASE_ITEM		   case_item_root;
 LOCAL SUBBD_PROTOCOL  *g_protocol_obj = 0;
 LOCAL BUS_DRIVER      *g_bus_obj = 0;
 
-static void case_exe_att(struct Case_item *case_item);
-static void case_exe_pha(struct Case_item *case_item);
-static void case_exe_att_pha(struct Case_item *case_item);
-static void case_exe_unknow(struct Case_item *case_item);
+#if 0
+LOCAL void case_exe_att(struct Case_item *case_item);
+LOCAL void case_exe_pha(struct Case_item *case_item);
+LOCAL void case_exe_att_pha(struct Case_item *case_item);
+LOCAL void case_exe_unknow(struct Case_item *case_item);
 
-static struct Case_frame_exe_item case_exe_items[] = {
+LOCAL struct Case_frame_exe_item case_exe_items[] = {
 	CASE_TYPE_ATT, case_exe_att,
 	CASE_TYPE_PHA, case_exe_pha,
 	(CASE_TYPE_ATT | CASE_TYPE_PHA), case_exe_att_pha,
-	
-	NULL, case_exe_unknow
 };
 
+LOCAL uint32_t CASE_EXE_ITEMS_NUM = sizeof(case_exe_items) / sizeof(struct Case_frame_exe_item) ;
+#endif
 /* Private function prototypes -----------------------------------------------*/
 LOCAL void init_runner_thread(void);
 
-LOCAL void case_runner_thread_entry(void* parameter);
+LOCAL void *case_runner_thread_entry(void* parameter);
 LOCAL void case_frame_exe(CASE_ITEM *case_item);
 LOCAL struct Case_item *upload_case(char *name);
+LOCAL int case_start(struct Case_item *case_item);
+LOCAL void case_stop(struct Case_item *case_item);
+LOCAL void case_pause(struct Case_item *case_item);
+LOCAL void case_continue(struct Case_item *case_item);
+LOCAL void unload_case(struct Case_item *case_item);
+LOCAL uint8_t case_end(struct Case_item *case_item);
 
-LOCAL void case_frame_sender(void *param);
-LOCAL int16_t reload_buffer(struct Case_item* case_item, int fd);
+LOCAL void case_frame_sender(union sigval param);
+LOCAL uint32_t reload_buffer(struct Case_item* case_item, int fd);
 LOCAL char* split_word(char *src, char **inner_ptr, uint8_t *new_line);
-LOCAL char* case_get_word(struct Case_item *case_item, uint8_t *new_line, uint16_t *count);
+LOCAL char* case_get_word(struct Case_item *case_item, uint8_t *new_line, uint32_t *count);
 
 /* Private functions ----------------------------------------------------------*/
 LOCAL void init_runner_thread(void)
@@ -180,10 +187,10 @@ LOCAL void init_runner_thread(void)
 	cs_thread = pthread_create(&tid, NULL, case_runner_thread_entry, NULL);
 }
 
-LOCAL int16_t reload_buffer(struct Case_item* case_item, int fd)
+LOCAL uint32_t reload_buffer(struct Case_item* case_item, int fd)
 {
-	uint16_t read_len;
-	uint16_t str_count;
+	uint32_t read_len;
+	uint32_t str_count;
 	if(case_item->inner_ptr == NULL){
 		str_count = 0;
 	}else{
@@ -227,12 +234,12 @@ LOCAL char* split_word(char *src, char **inner_ptr, uint8_t *new_line)
 	return NULL;
 }
 
-LOCAL char* case_get_word(struct Case_item *case_item, uint8_t *new_line, uint16_t *count)
+LOCAL char* case_get_word(struct Case_item *case_item, uint8_t *new_line, uint32_t *count)
 {
 	char *word;
 	word = split_word(NULL, &case_item->inner_ptr, new_line);
 	if(word == NULL){
-		uint16_t read_len;
+		uint32_t read_len;
 		read_len = reload_buffer(case_item, case_item->fd);  
 		if(read_len <= 0)
 			return NULL;
@@ -243,14 +250,33 @@ LOCAL char* case_get_word(struct Case_item *case_item, uint8_t *new_line, uint16
 	return word;
 }
 
+LOCAL uint8_t case_end(struct Case_item *case_item)
+{
+	APP_ASSERT("case_end: case_item == NULL.\r\n",case_item);
+
+	case_item->current_line = 0;
+	if(case_item->times == 0){
+		case_stop(case_item);
+		return 1;
+	}else if(case_item->times >0){
+		case_item->times--;
+	}
+	return 0;
+}
+
+static void sendCMD_NextStep_tosunboard(struct Case_item *case_item)
+{
+	APP_ASSERT("sendCMD_NextStep_tosunboard: Free pointer.\r\n", case_item!= NULL);
+	
+	g_protocol_obj->ioctrl(IO_CTRL_MSG_UPDATE_CASE_LINE, g_bus_obj, case_item->current_line);
+}
+
 LOCAL void case_frame_exe(CASE_ITEM *case_item)
 {
-	uint16_t    interval;
-	uint16_t    i = 0;
+	uint32_t    interval;
 	int			err;
-	uint16_t	spacing;
 	
-	APP_ASSERT("Free pointer.\r\n", case_item!= NULL);
+	APP_ASSERT("Free pointer.\r\n", case_item);
 	if(case_item->state == CASE_STATE_UNLOADED){
 		unload_case(case_item);
 		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_WARNING ,("case unload.\r\n"));
@@ -264,7 +290,7 @@ LOCAL void case_frame_exe(CASE_ITEM *case_item)
 	    if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
 	        APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_WARNING ,("clock_gettime error.\r\n"));
 		ts.tv_sec += BUFF_SEM_TIMEOUT;
-		err = sem_timedwait(&case_item->bf_ld_sem, &ts);
+		err = sem_timedwait(case_item->bf_ld_sem, &ts);
 		if(err <0){
 			APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_WARNING, ("rt_sem_take timeout(code:%d).\r\n", err));
 			case_stop(case_item);
@@ -276,11 +302,11 @@ LOCAL void case_frame_exe(CASE_ITEM *case_item)
 			return;
 		}
 	}
-	
+
 	if(case_item->state == CASE_STATE_STOP){
 		return;
 	}
-	
+
 	if(!case_item->flag_hspeed) {
 		interval = case_item->val_array[case_item->mid_read_pt*case_item->val_count];
 	}else{
@@ -294,6 +320,9 @@ LOCAL void case_frame_exe(CASE_ITEM *case_item)
 	timer_settime(case_item->timer,0,&its,NULL);
 
 	if(!case_item->flag_hspeed) {
+#if 0
+		uint32_t    i = 0;
+		uint32_t	spacing;
 		while(case_exe_items[i].key){
 			if(case_exe_items[i].key == case_item->case_type)
 				break;
@@ -309,6 +338,7 @@ LOCAL void case_frame_exe(CASE_ITEM *case_item)
 		if(spacing < VAL_ARRAY_LENGTH/2){
 			rt_sem_release(case_item->bf_ld_rd_sem);
 		}
+#endif
 	}else{
 		sendCMD_NextStep_tosunboard(case_item);
 	}
@@ -318,36 +348,25 @@ LOCAL void case_frame_exe(CASE_ITEM *case_item)
 
 LOCAL int8_t upload_to_subboard(struct Case_item *case_item)
 {
-	int fd_mid;
 	uint8_t new_line;
 	int i;
 	char *c_val;
-	int16_t *temp_buf;
 	uint32_t index;
-	size_t file_len;
-	uint16_t count;
-	struct rf_dev_msg *msg_start_load;
-	PROTOCL_CTRL_MSG ioctrl_msg;
+	uint32_t count;
+	int32_t *temp_att, *temp_pha;
 
-	ioctrl_msg.type = IO_CTRL_MSG_START_CASE_UPLOAD;
-	ioctrl_msg.params = g_bus_obj;
-	g_protocol_obj->ioctrl(&ioctrl_msg);
+	g_protocol_obj->ioctrl(IO_CTRL_MSG_START_CASE_UPLOAD, g_bus_obj);
 
 	case_item->val_count = 1;
 	if(case_item->case_type & CASE_TYPE_ATT){
-		temp_att = (int16_t*)malloc(sizeof(int16_t) * (case_item->ch_max+1));
+		temp_att = (int32_t*)malloc(sizeof(int32_t) * (case_item->ch_max+1));
 		case_item->val_count += case_item->ch_max;
 	}
 	if(case_item->case_type & CASE_TYPE_PHA){
-		temp_pha = (int16_t*)malloc(sizeof(int16_t) * (case_item->ch_max+1));
+		temp_pha = (int32_t*)malloc(sizeof(int32_t) * (case_item->ch_max+1));
 		case_item->val_count += case_item->ch_max;
 	}
 	
-	if(!temp_buf){
-		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_SERIOUS,
-			("temp_buf malloc failed.\r\n"));
-		return CASE_ERROR;
-	}
 	case_item->line_max = 0;
 	while(1){
 		/* this c_val is interval(ms) for every line */
@@ -397,17 +416,17 @@ LOCAL int8_t upload_to_subboard(struct Case_item *case_item)
 	return CASE_ERROR_OK;
 }
 
-LOCAL void case_frame_sender(void *param)
+LOCAL void case_frame_sender(union sigval param)
 {
-	rt_err_t err;
-	struct Case_item *case_item = (struct Case_item *)param;
+	int ret;
+	struct Case_item *case_item = (struct Case_item *)param.sival_ptr;
 
-	APP_ASSERT("case_frame_sender: param == NULL.\r\n",param);
+	APP_ASSERT("case_frame_sender: param == NULL.\r\n", case_item);
 
-	err = rt_mq_send(s_mq_cs, &(case_item->exe_mis), sizeof(struct Case_mission*));
-	if(err < 0){
-		APP_DEBUGF(RFDEV_DEBUG | APP_DBG_TRACE | APP_DBG_LEVEL_SEVERE, 
-			("case_frame_sender: msg send failed.(code:%d)\r\n",err));
+    ret = msgsnd(s_mq_cs, (void *)case_item->exe_mis, sizeof(CASE_MISSION_MSG)-sizeof(long), 0);
+    if(ret<0){
+		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE, 
+			("msg send failed.(code:%d)\r\n",ret));
 	}
 
 	return ;
@@ -419,10 +438,10 @@ LOCAL struct Case_item *upload_case(char *name)
 	int fd;
 	struct Case_item *case_item;
 	uint8_t new_line;
-	uint16_t count;
+	uint32_t count;
 	char *c_case_type, *c_ch;
-	uint16_t iter;
-	uint16_t first_line = 0;
+	uint32_t iter;
+	uint32_t first_line = 0;
 	int8_t res;
 	
 	APP_ASSERT("upload_case: Free pointer.\r\n", name!= NULL);
@@ -475,7 +494,7 @@ LOCAL struct Case_item *upload_case(char *name)
 		goto end_failed;
 	}
 	case_item->ch_max = CHANNEL_BUFFER_ADD;
-	case_item->cha_array = (uint16_t *)malloc(sizeof(uint16_t)*case_item->ch_max);	
+	case_item->cha_array = (int32_t *)malloc(sizeof(int32_t)*case_item->ch_max);	
 	if(!case_item->cha_array){
 		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_SERIOUS ,
 			("cha_array malloc failed.\r\n"));		
@@ -488,16 +507,16 @@ LOCAL struct Case_item *upload_case(char *name)
 		c_ch = case_get_word(case_item, &new_line, &count);
 		first_line +=count;
 		if(iter >= case_item->ch_max){
-			uint16_t *cha_array_temp = NULL;
-			uint16_t cha_max_temp = case_item->ch_max + CHANNEL_BUFFER_ADD;
-			cha_array_temp = (uint16_t *)malloc(sizeof(uint16_t)*cha_max_temp);	
+			int32_t *cha_array_temp = NULL;
+			int32_t cha_max_temp = case_item->ch_max + CHANNEL_BUFFER_ADD;
+			cha_array_temp = (int32_t *)malloc(sizeof(int32_t)*cha_max_temp);	
 			if(!cha_array_temp){
 				APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_SERIOUS,
 					("cha_array_temp malloc failed.\r\n"));		
 				goto end_failed;
 			}
-			memset(cha_array_temp, 0, cha_max_temp*sizeof(uint16_t));
-			memcpy(cha_array_temp, case_item->cha_array, case_item->ch_max*sizeof(uint16_t));
+			memset(cha_array_temp, 0, cha_max_temp*sizeof(int32_t));
+			memcpy(cha_array_temp, case_item->cha_array, case_item->ch_max*sizeof(int32_t));
 			free(case_item->cha_array);
 			case_item->cha_array = cha_array_temp;
 			case_item->ch_max = cha_max_temp;
@@ -516,20 +535,7 @@ LOCAL struct Case_item *upload_case(char *name)
 			break;
 		}
 	}
-    struct sigevent sev;
-	memset(&sev, 0, sizeof(struct sigevent));
-	sev.sigev_notify = SIGEV_THREAD;
-    sev.sigev_signo = SIGRTMIN;
-    sev.sigev_value.sival_ptr = "case_timer";
-    sev.sigev_notify_function = case_frame_sender;
-    sev.sigev_notify_attributes = case_item;
 
-    /* create timer */
-    if (timer_create (CLOCK_REALTIME, &sev, &case_item->timer) == -1){
-    	APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_SERIOUS, ("timer_create failed.\r\n"));		
-    	goto end_failed;
-    }
-	
 	INIT_LIST_HEAD(&case_item->list);
     list_add(&case_item->list, &case_item_root.list);
 
@@ -571,37 +577,178 @@ end_failed:
 	return NULL;
 }
 
-LOCAL int16_t case_start(struct Case_item *case_item)
+LOCAL int case_start(struct Case_item *case_item)
 {
-	rt_err_t err;
-	uint16_t time_i = 0;
-	int16_t res;
+	int res;
 
 	APP_ASSERT("case_start: Free pointer.\r\n", case_item!= NULL);
-	
-	if(case_item->timer == NULL){
-		case_item->timer = rt_timer_create(case_item->case_name,
-												case_frame_sender, (void*)case_item,	1, RT_TIMER_FLAG_ONE_SHOT);
-	}else{
-		rt_timer_control(case_item->timer, RT_TIMER_CTRL_SET_TIME, (void*)&time_i);
+
+	if(case_item->state == CASE_STATE_RUN){
+		case_stop(case_item);
+	}else if(case_item->state == CASE_STATE_UNLOADED){
+		return RET_ERROR_CASE_UNLOAD;
+	}else if(case_item->state == CASE_STATE_BUSY){
+		return RET_ERROR_CASE_BUSY;
 	}
+
+	struct sigevent sev;
+	memset(&sev, 0, sizeof(struct sigevent));
+	sev.sigev_notify = SIGEV_THREAD;
+    sev.sigev_signo = SIGRTMIN;
+    sev.sigev_value.sival_ptr = case_item;
+    sev.sigev_notify_function = case_frame_sender;
+
+    /* create timer */
+    if (timer_create (CLOCK_REALTIME, &sev, &case_item->timer) == -1){
+    	APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_SERIOUS, ("timer_create failed.\r\n"));		
+    }
+	
 	if(!case_item->flag_hspeed){
 	/* buffer loader begin */
+#if 0
 		res = case_buffer_load_start(case_item);
 		if(res < 0){
-			APP_DEBUGF(CASE_DEBUG | APP_DBG_LEVEL_SERIOUS,
-				("case_start: case_buffer_load_start failed.\r\n"));
+			APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_SERIOUS,
+				("case_buffer_load_start failed.\r\n"));
 			return CASE_ERROR;
+		}
+#endif
+	}
+
+	struct itimerspec its;
+	memset(&its, 0, sizeof(struct itimerspec));
+	its.it_value.tv_sec = 0;
+    its.it_value.tv_nsec = 1;
+
+	case_item->state = CASE_STATE_RUN;
+	res = timer_settime(case_item->timer,0,&its,NULL);
+
+	return res;
+}
+
+static void case_stop(struct Case_item *case_item)
+{
+	int err;
+	APP_ASSERT("case_stop: Free pointer.\r\n", case_item!= NULL);
+
+	if(case_item->state == CASE_STATE_STOP){
+		return;
+	}
+	case_item->state = CASE_STATE_STOP;
+
+	if(case_item->timer){
+		err =timer_delete(case_item->timer);
+		if(err<0){
+			APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_WARNING,
+				("timer stop failed(code:%d).\r\n",err));
+		}
+	}
+	if(case_item->bf_ld_rd_sem){
+		sem_post(case_item->bf_ld_rd_sem);
+	}
+	/*
+	while(case_item->bf_ld_th){
+		rt_thread_yield();
+	}*/
+	if(case_item->bf_ld_sem){
+		sem_destroy(case_item->bf_ld_sem);
+		case_item->bf_ld_sem = NULL;
+	}
+	if(case_item->bf_ld_rd_sem){
+		sem_destroy(case_item->bf_ld_rd_sem);
+		case_item->bf_ld_rd_sem = NULL;
+	}
+	if(case_item->val_array){
+		free(case_item->val_array);
+		case_item->val_array = NULL;
+	}
+	if(case_item->mid_fd>=0){
+		close(case_item->mid_fd);
+		case_item->mid_fd = -1;
+	}
+
+	case_item->mid_read_pt = 0;
+	case_item->mid_write_pt = 0;
+	case_item->current_line = 0;
+
+	return;
+}
+
+LOCAL void case_pause(struct Case_item *case_item)
+{
+	int err;
+	APP_ASSERT("case_pause: Free pointer.\r\n", case_item!= NULL);
+	if(case_item->timer){
+		struct itimerspec its;
+		memset(&its, 0, sizeof(struct itimerspec));
+		// set 0 to stop the timer.
+		err = timer_settime(case_item->timer,0,&its,NULL);
+		if(err<0){
+			APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_WARNING,
+				("timer pause failed(code:%d).\r\n",err));
 		}
 	}
 
-	case_item->state = CASE_STATE_RUN;
-	err = rt_timer_start(case_item->timer);
-	
-	return err;
+	if(!case_item->flag_hspeed && case_item->fd>=0){
+		case_item->seek_cur = lseek(case_item->fd, 0, SEEK_CUR);
+		close(case_item->fd);
+	}
+	case_item->state = CASE_STATE_PAUSE;
 }
 
-LOCAL void case_runner_thread_entry(void* parameter)
+LOCAL void case_continue(struct Case_item *case_item)
+{
+	int err;
+	APP_ASSERT("case_continue: Free pointer.\r\n", case_item!= NULL);
+	if(!case_item->flag_hspeed){
+		case_item->fd = open(case_item->full_path, O_RDONLY, 0);
+		lseek(case_item->fd, case_item->seek_cur, SEEK_SET);
+	}
+	case_item->state = CASE_STATE_RUN;
+
+	struct itimerspec its;
+	memset(&its, 0, sizeof(struct itimerspec));
+	// set 0 to stop the timer.	
+	its.it_value.tv_nsec = 1;
+	err = timer_settime(case_item->timer,0,&its,NULL);
+	if(err<0){
+		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_WARNING,
+			("timer pause failed(code:%d).\r\n",err));
+	}
+}
+
+
+LOCAL void unload_case(struct Case_item *case_item)
+{
+	APP_ASSERT("unload_case: Free pointer.\r\n", case_item!= NULL);
+
+	if(case_item->state != CASE_STATE_STOP){
+		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_WARNING,
+			("case is running, shoud not reach here.\r\n"));
+		return;
+	}
+	list_del(&case_item->list);
+
+	if(case_item->timer)
+		timer_delete(case_item->timer);
+	if(case_item->fd>=0)
+		close(case_item->fd);
+	if(case_item->buffer)
+		free(case_item->buffer);
+	if(case_item->full_path)
+		free(case_item->full_path);
+	if(case_item->cha_array)
+		free(case_item->cha_array);
+	if(case_item->exe_mis)
+		free(case_item->exe_mis);
+	if(case_item->mid_full_path)
+		free(case_item->mid_full_path);
+		
+	free(case_item);
+}
+
+
+LOCAL void *case_runner_thread_entry(void* parameter)
 {
 	ssize_t size;
 	CASE_MISSION_MSG case_mission;
@@ -616,17 +763,17 @@ LOCAL void case_runner_thread_entry(void* parameter)
 			case CASE_MISSION_EXE:
 				case_frame_exe((CASE_ITEM *)case_mission.data);
 			break;
-/*			case CASE_MISSION_LOAD:
-				load_case((char*)case_mission.data);
-				free(case_mission.data);
-			break;*/
+			case CASE_MISSION_LOAD:
+//				load_case((char*)case_mission.data);
+//				free(case_mission.data);
+			break;
 			case CASE_MISSION_HS_LOAD:
 				upload_case((char*)case_mission.data);
 				free(case_mission.data);
 			break;
-/*			case CASE_MISSION_UNLD:
-				unload_case((CASE_ITEM *)case_mission.data);
-			break;*/
+			case CASE_MISSION_UNLD:
+//				unload_case((CASE_ITEM *)case_mission.data);
+			break;
 			case CASE_MISSION_RUN:
 				case_start((CASE_ITEM *)case_mission.data);
 			break;
@@ -641,8 +788,9 @@ LOCAL void case_runner_thread_entry(void* parameter)
 			break;
 		}
 	}
-}
 
+	return NULL;
+}
 
 /* Public functions ----------------------------------------------------------*/
 void init_model_case_manager(json_object *case_json_obj)
@@ -663,7 +811,5 @@ void init_model_case_manager(json_object *case_json_obj)
 
     init_runner_thread();
     
-    /*
-    rt_list_init(&case_item_root);
-    regist_cmd_item_list(case_runner_cmd_items);*/
+	INIT_LIST_HEAD(&case_item_root.list);
 }

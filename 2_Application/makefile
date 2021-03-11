@@ -9,7 +9,7 @@ OBJ = obj
 DEP = dep
  
 CFLAGS += -g -Wall -I./inc -I./lib/inc -I./src -I./inc/bll 
-LINKFLAGS +=  -lpthread 
+LINKFLAGS +=  -lpthread -lrt
 
 CXX_SOURCES = $(foreach dir,$(SRCDIR), $(wildcard $(dir)/*.$(EXTENSION)))
 CXX_SOURCES += $(foreach dir,$(SRCDIR)/bll, $(wildcard $(dir)/*.$(EXTENSION)))

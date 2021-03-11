@@ -86,17 +86,11 @@ typedef struct data_type_CCMMV
     int32_t val_count;  // the count of values that will send at same time, (if ATT & PHA enable, val_count = 2)
 }CCMMV;
 
-typedef struct protocl_ctrl_msg
-{
-    uint32_t  type;
-    void      *params;
-}PROTOCL_CTRL_MSG;
-
 typedef int32_t (*subbd_protocol_init)(void *param);
 typedef int32_t (*subbd_protocol_open)(void *param);
 typedef int32_t (*subbd_protocol_write)(BUS_DRIVER *bus, void *data);
 typedef void *(*subbd_protocol_read)(BUS_DRIVER *bus, int len);
-typedef int32_t (*subbd_protocol_ioctrl)(PROTOCL_CTRL_MSG *ctrl);
+typedef int32_t (*subbd_protocol_ioctrl)(int request, ...);
 typedef int32_t (*subbd_protocol_close)(void *param);
 
 typedef struct subbd_protocol
@@ -118,7 +112,7 @@ extern uint32_t SUBBD_PROTOCOL_SIZE;
 
 /* Exported macro ------------------------------------------------------------*/
 #define IO_CTRL_MSG_START_CASE_UPLOAD        0x0019
-
+#define IO_CTRL_MSG_UPDATE_CASE_LINE         0x0020
 
 /* DEST TYPE */
 #define DEST_ATT            0x01
