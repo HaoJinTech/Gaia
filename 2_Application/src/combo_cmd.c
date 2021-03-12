@@ -22,6 +22,13 @@
 #include "cmds/CLCD.c"
 
 #include "cmds/CSLS.c"
+#include "cmds/CSINFO.c"
+#include "cmds/CSUPLD.c"
+#include "cmds/CSUNLD.c"
+#include "cmds/CSRUN.c"
+#include "cmds/CSSTOP.c"
+#include "cmds/CSPAUS.c"
+#include "cmds/CSCONT.c"
 // TODO: add new cmd src file here
 
 CMD_OBJ cmd_objs[] = {
@@ -33,6 +40,13 @@ CMD_OBJ cmd_objs[] = {
     CMDOBJ_CLCD,
 
     CMDOBJ_CSLS,
+    CMDOBJ_CSINFO,
+    CMDOBJ_CSUPLD,
+    CMDOBJ_CSUNLD,
+    CMDOBJ_CSRUN,
+    CMDOBJ_CSSTOP,
+    CMDOBJ_CSPAUS,
+    CMDOBJ_CSCONT,
     // TODO: add new cmds here
 
     CMDOBJ_UNKNOW

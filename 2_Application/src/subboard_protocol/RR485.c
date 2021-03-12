@@ -88,6 +88,9 @@ used for load all pha values from main board , than will be saved into flash.
 /******************************************************************************/
 
 #define START_LOAD_WAIT_TIME_S  3  
+#define RF_OPEN_RX_TIMEOUT_S    2
+#define RF_DEV_OPEN_RETRY_TIME  3
+
 /* Private define ------------------------------------------------------------*/
 #define RR485_DEBUG   APP_DBG_ON
 
@@ -96,6 +99,8 @@ used for load all pha values from main board , than will be saved into flash.
 BUS_DRIVER *init_bus = 0;  // used for subboard init, usually is rs232
 const char init_subboard_msg[] = {CMD_TYPE_INIT_EX, 0, 0, 0, 0, 255, 255};
 const char start_load_msg[] = {CMD_TYPE_START_LOAD, 255, 255};
+uint32_t    s_board_num = 0;
+uint32_t    s_board_ch = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 LOCAL int32_t radio_rack_485_init(void *param);
@@ -155,6 +160,8 @@ LOCAL char *make_new_buf(long dest_type, int32_t *ch, int32_t *val, uint32_t ch_
 LOCAL int32_t radio_rack_485_init(void *param)
 {
   init_bus = (BUS_DRIVER*) param;
+  if(!init_bus)
+    return RET_ERROR;
 
   return RET_OK;
 }
@@ -164,21 +171,46 @@ LOCAL int32_t radio_rack_485_open(void *param)
   if(!init_bus)
     return RET_ERROR;
 
-  init_bus->write(init_subboard_msg, sizeof(init_subboard_msg));
+  int32_t open_retry_times=0;
 
+open_retry:
+   init_bus->write(init_subboard_msg, sizeof(init_subboard_msg));
+
+  struct timespec ts;
+  uint8_t rxbuf[8];
   do{
-    err = rt_sem_take(s_rf_rx_sem, RF_OPEN_RX_TIMEOUT_S*100);
-    read_size = read(s_rf_device, 1, rxbuf, 6);
+    if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+        APP_DEBUGF(RR485_DEBUG | APP_DBG_LEVEL_WARNING, ("clock_gettime error.\r\n"));
+    ts.tv_sec += RF_OPEN_RX_TIMEOUT_S;
+    err = sem_timedwait(init_bus->sem_rx_ready, &ts);
+    if(err == ETIMEDOUT) break;
+    else(err != 0) {
+      APP_DEBUGF(RR485_DEBUG | APP_DBG_LEVEL_WARNING, ("sem_timedwait error.\r\n"));
+      break;
+    }
+
+    read_size = init_bus->read(rxbuf, 8);
     if(read_size == 6 && rxbuf[0] == 253){ //CMD_TYPE_INIT
       if(s_board_num < rxbuf[1]+1){
         s_board_num = rxbuf[1]+1;
         s_board_ch = rxbuf[2]+s_board_ch;
       }
-      APP_DEBUGF(RR485_DEBUG | APP_DBG_STATE, 
-      ("get rf info: board_num:%d,board_ch:%d,board_step:%d\r\n",rxbuf[1]+1,rxbuf[2],rxbuf[3]));
+      APP_DEBUGF(RR485_DEBUG | APP_DBG_TRACE, 
+        ("get rf info: board_num:%d,board_ch:%d,board_step:%d\r\n",rxbuf[1]+1,rxbuf[2],rxbuf[3]));
     }
-  }while(err == RT_EOK && read_retry_times<RF_DEV_OPEN_RETRY_TIME);
+  }while(1);
 
+  if(s_board_ch == 0){
+    APP_DEBUGF(RR485_DEBUG | APP_DBG_STATE, 
+    ("get rf board init info failed,try again.\r\n"));
+    if(open_retry_times<RF_DEV_OPEN_RETRY_TIME){
+      init_bus->close(NULL);   
+      open_retry_times++;
+      goto open_retry;
+    }
+  }
+  APP_DEBUGF(RR485_DEBUG | APP_DBG_STATE, 
+    ("s_board_num = %d,s_board_ch = %d.\r\n", s_board_num,s_board_ch));
   return RET_OK;
 }
 
