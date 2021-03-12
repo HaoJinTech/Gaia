@@ -165,7 +165,20 @@ LOCAL int32_t radio_rack_485_open(void *param)
     return RET_ERROR;
 
   init_bus->write(init_subboard_msg, sizeof(init_subboard_msg));
-  
+
+  do{
+    err = rt_sem_take(s_rf_rx_sem, RF_OPEN_RX_TIMEOUT_S*100);
+    read_size = read(s_rf_device, 1, rxbuf, 6);
+    if(read_size == 6 && rxbuf[0] == 253){ //CMD_TYPE_INIT
+      if(s_board_num < rxbuf[1]+1){
+        s_board_num = rxbuf[1]+1;
+        s_board_ch = rxbuf[2]+s_board_ch;
+      }
+      APP_DEBUGF(RR485_DEBUG | APP_DBG_STATE, 
+      ("get rf info: board_num:%d,board_ch:%d,board_step:%d\r\n",rxbuf[1]+1,rxbuf[2],rxbuf[3]));
+    }
+  }while(err == RT_EOK && read_retry_times<RF_DEV_OPEN_RETRY_TIME);
+
   return RET_OK;
 }
 

@@ -170,6 +170,9 @@ LOCAL void case_frame_sender(union sigval param);
 LOCAL uint32_t reload_buffer(struct Case_item* case_item, int fd);
 LOCAL char* split_word(char *src, char **inner_ptr, uint8_t *new_line);
 LOCAL char* case_get_word(struct Case_item *case_item, uint8_t *new_line, uint32_t *count);
+LOCAL void full_case_name(char *dest, char *src, uint32_t dest_len); // attach .csv or .CSV to end of case name
+LOCAL CASE_MISSION_MSG *init_misson_msg(CASE_MISSION_MSG *miss_msg, CASE_MISSION mis, void *data);
+LOCAL int snd_misson_msg(CASE_MISSION_MSG *case_mission_msg);
 
 /* Private functions ----------------------------------------------------------*/
 LOCAL void init_runner_thread(void)
@@ -430,6 +433,16 @@ LOCAL void case_frame_sender(union sigval param)
 	return ;
 }
 
+
+LOCAL void full_case_name(char *dest, char *src, uint32_t dest_len)
+{
+	strncpy(dest, src, CASE_NAME_LEN);
+	if(!strstr(src, FILE_EXTENSION_LOWERCASE) &&
+		!strstr(src, FILE_EXTENSION_CAPITAL)){
+		strcat(dest, ".csv\0");
+	}
+}
+
 LOCAL struct Case_item *upload_case(char *name)
 {
 	char *full_path = NULL;
@@ -440,12 +453,15 @@ LOCAL struct Case_item *upload_case(char *name)
 	char *c_case_type, *c_ch;
 	uint32_t iter;
 	uint32_t first_line = 0;
+#define CASE_NAME_CSV_LEN   128
+	char case_name_csv[CASE_NAME_CSV_LEN];
 	int8_t res;
 	
 	APP_ASSERT("upload_case: Free pointer.\r\n", name!= NULL);
 
-	full_path = (char*)malloc(strlen(s_folder)+strlen(name)+5);
-	sprintf(full_path, "/%s/%s", s_folder, name);
+	full_case_name(case_name_csv, name, CASE_NAME_CSV_LEN);
+	full_path = (char*)malloc(strlen(case_full_path)+strlen(case_name_csv)+5);
+	sprintf(full_path, "%s/%s", case_full_path, name);
 
 	fd = open(full_path, O_RDONLY , 0);
 
@@ -715,21 +731,6 @@ LOCAL void case_continue(struct Case_item *case_item)
 	}
 }
 
-LOCAL struct Case_item *get_case_item(char *name)
-{
-	struct Case_item *iter;
-	uint32_t case_name_len = 0, name_len = 0;
-    list_for_each_entry(iter, &case_item_root.list, list){
-		case_name_len = strlen(iter->case_name);
-		name_len = strlen(name);
-		if(name_len == case_name_len &&
-		0 == strncmp(iter->case_name, name, case_name_len)){
-            return iter;
-		}
-    }
-
-	return NULL;
-}
 
 LOCAL void unload_case(struct Case_item *case_item)
 {
@@ -782,10 +783,10 @@ LOCAL void *case_runner_thread_entry(void* parameter)
 			break;
 			case CASE_MISSION_HS_LOAD:
 				upload_case((char*)case_mission.data);
-				free(case_mission.data);
+				//free(case_mission.data);
 			break;
 			case CASE_MISSION_UNLD:
-//				unload_case((CASE_ITEM *)case_mission.data);
+				unload_case((CASE_ITEM *)case_mission.data);
 			break;
 			case CASE_MISSION_RUN:
 				case_start((CASE_ITEM *)case_mission.data);
@@ -805,7 +806,91 @@ LOCAL void *case_runner_thread_entry(void* parameter)
 	return NULL;
 }
 
+LOCAL CASE_MISSION_MSG *init_misson_msg(CASE_MISSION_MSG *miss_msg, CASE_MISSION mis, void *data)
+{
+	APP_ASSERT("miss_msg = NULL",miss_msg);
+	miss_msg->msg_id = CASE_MISSION_MSG_ID;
+	miss_msg->mission_id = mis;
+	miss_msg->data = data;
+
+	return miss_msg;
+}
+
+LOCAL int snd_misson_msg(CASE_MISSION_MSG *case_mission_msg)
+{
+	int ret = 0;
+    ret = msgsnd(s_mq_cs, (void *)&case_mission_msg, sizeof(CASE_MISSION_MSG)-sizeof(long), 0);
+    if(ret<0){
+		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_WARNING, 
+			("msg send failed.(code:%d)\r\n",ret));
+		return ret;
+	}
+	return RET_OK;
+}
 /* Public functions ----------------------------------------------------------*/
+
+
+int32_t send_upload_misson(char *case_name)
+{
+	if(!case_name)
+		return RET_ERROR;
+
+	CASE_MISSION_MSG case_mission_msg;
+	init_misson_msg(&case_mission_msg, CASE_MISSION_HS_LOAD, case_name);
+	return snd_misson_msg(&case_mission_msg);
+}
+
+int32_t send_unload_misson(struct Case_item *case_item)
+{
+	if(!case_item)
+		return RET_ERROR;
+
+	CASE_MISSION_MSG case_mission_msg;
+	init_misson_msg(&case_mission_msg, CASE_MISSION_UNLD, case_item);
+	return snd_misson_msg(&case_mission_msg);
+}
+
+int32_t send_run_misson(struct Case_item *case_item)
+{
+	if(!case_item)
+		return RET_ERROR;
+
+	CASE_MISSION_MSG case_mission_msg;
+	init_misson_msg(&case_mission_msg, CASE_MISSION_RUN, case_item);
+	return snd_misson_msg(&case_mission_msg);
+}
+
+int32_t send_stop_misson(struct Case_item *case_item)
+{
+	if(!case_item)
+		return RET_ERROR;
+
+	CASE_MISSION_MSG case_mission_msg;
+	init_misson_msg(&case_mission_msg, CASE_MISSION_STOP, case_item);
+	return snd_misson_msg(&case_mission_msg);
+}
+
+int32_t send_pause_misson(struct Case_item *case_item)
+{
+	if(!case_item)
+		return RET_ERROR;
+
+	CASE_MISSION_MSG case_mission_msg;
+	init_misson_msg(&case_mission_msg, CASE_MISSION_PAU, case_item);
+	return snd_misson_msg(&case_mission_msg);
+}
+
+int32_t send_countinu_misson(struct Case_item *case_item)
+{
+	if(!case_item)
+		return RET_ERROR;
+
+	CASE_MISSION_MSG case_mission_msg;
+	init_misson_msg(&case_mission_msg, CASE_MISSION_CON, case_item);
+	return snd_misson_msg(&case_mission_msg);
+}
+
+
 int32_t init_model_case_manager(json_object *case_json_obj)
 {
 	int protocol_id = 0;
@@ -825,17 +910,29 @@ int32_t init_model_case_manager(json_object *case_json_obj)
     g_bus_obj =     &bus_drivers[bus_id];
 
     init_runner_thread();
-    
 	INIT_LIST_HEAD(&case_item_root.list);
 	
 	return RET_OK;
 }
 
-CASE_STATE get_case_state(char *case_name, char *out_state, uint32_t strlen)
+struct Case_item *get_case_item(char *name)
 {
-	CASE_ITEM *case_item = NULL;
-	case_item = get_case_item(case_name);
+	struct Case_item *iter;
+	uint32_t case_name_len = 0, name_len = 0;
+    list_for_each_entry(iter, &case_item_root.list, list){
+		case_name_len = strlen(iter->case_name);
+		name_len = strlen(name);
+		if(name_len == case_name_len &&
+		0 == strncmp(iter->case_name, name, case_name_len)){
+            return iter;
+		}
+    }
 
+	return NULL;
+}
+
+CASE_STATE get_case_state(struct Case_item *case_item, char *out_state, uint32_t strlen)
+{
 	if(!case_item){
 		if(out_state){
 			snprintf(out_state, strlen, "UNLOAD");
@@ -872,6 +969,57 @@ CASE_STATE get_case_state(char *case_name, char *out_state, uint32_t strlen)
 	}
 
 	return case_item->state;
+}
+
+uint32_t get_case_line_max(struct Case_item *case_item)
+{
+	if(case_item){
+		return case_name->line_max;
+	}
+	return 0;
+}
+
+uint32_t get_case_times(struct Case_item *case_item)
+{
+	if(case_item){
+		return case_name->times;
+	}
+	return 0;
+}
+
+uint32_t get_case_current_line(struct Case_item *case_item)
+{
+	if(case_item){
+		return case_item->current_line;
+	}
+	return 0;
+}
+
+int32_t check_case_exist(char *name)
+{
+#define CASE_NAME_CSV_LEN   256
+	char case_name_csv[CASE_NAME_CSV_LEN];
+	char full_path[CASE_NAME_CSV_LEN]
+	struct Case_item *case_item = NULL;
+
+	if(!name)
+		return 0;
+
+	case_item = get_case_item(name);
+	if(case_item){
+		return 1;
+	}else{
+		full_case_name(case_name_csv, name, CASE_NAME_CSV_LEN);
+		sprintf(full_path, "%s/%s", case_full_path, name);
+		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE, ("full_path:%s.\r\n", full_path));		
+
+		fd = open(full_path, O_RDONLY , 0);
+		if(fd < 0){
+			return 0;
+		}
+		clase(fd);
+		return 1;
+	}
 }
 
 DIR* search_folder_start(void)
@@ -923,3 +1071,5 @@ const char *get_case_full_path(void)
 {
 	return case_full_path;
 }
+
+

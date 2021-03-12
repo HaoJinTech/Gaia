@@ -8,7 +8,7 @@
   *       
 	********** Copyright (C), 2014-2015,HJ technologies **************************
 	*/
-
+#include "platform.h"
 #include "cmd_prototype.h"
 #include "bll_calibration.h"
 
