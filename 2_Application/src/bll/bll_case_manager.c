@@ -54,6 +54,9 @@ typedef struct Case_mission{
 	void 					*data;
 }CASE_MISSION_MSG;
 
+#define CASE_NAME_CSV_LEN   		256
+#define CASE_FULL_PATH_LEN  		256
+#define FULL_PATH_AND_CASE_NAME		CASE_FULL_PATH_LEN + CASE_NAME_CSV_LEN
 typedef struct Case_item{
     /* case stuff */
 #define CASE_NAME_LEN							256
@@ -66,7 +69,7 @@ typedef struct Case_item{
     struct Case_mission     *exe_mis;        // missions
     /* file stuff */
     int                     fd;              // file handler
-    char                    *full_path;      // file full path
+    char                    full_path[FULL_PATH_AND_CASE_NAME];      // file full path
     uint32_t                ch_max;          // channel number
     int32_t                *cha_array;      // 
     uint32_t                first_line;      // 
@@ -135,11 +138,6 @@ struct Case_frame_exe_item
 #define CASE_ERROR					-1
 #define CASE_ERROR_FORMAT			-40
 
-#define CASE_NAME_CSV_LEN   		256
-#define CASE_FULL_PATH_LEN  		256
-
-
-#define FULL_PATH_AND_CASE_NAME		CASE_FULL_PATH_LEN + CASE_NAME_CSV_LEN
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 LOCAL const char 	*s_folder;
@@ -604,7 +602,7 @@ LOCAL struct Case_item *upload_case(char *name)
 	case_item->fd = fd;
 	strncpy(case_item->case_name, case_name_csv, CASE_NAME_LEN);
 
-	case_item->full_path = full_path;
+	strncpy(case_item->full_path, full_path, FULL_PATH_AND_CASE_NAME);
 
 	c_case_type = case_get_word(case_item, &new_line, &count);
 	first_line += count;
@@ -687,10 +685,6 @@ end_failed:
 	if(case_item->buffer){
 		free(case_item->buffer);
 		case_item->buffer = NULL;
-	}
-	if(case_item->full_path){
-		free(case_item->full_path);
-		case_item->full_path = NULL;
 	}
 	if(case_item)
 		free(case_item);
@@ -868,8 +862,6 @@ LOCAL void unload_case(struct Case_item *case_item)
 		close(case_item->fd);
 	if(case_item->buffer)
 		free(case_item->buffer);
-	if(case_item->full_path)
-		free(case_item->full_path);
 	if(case_item->cha_array)
 		free(case_item->cha_array);
 	if(case_item->exe_mis)

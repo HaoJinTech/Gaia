@@ -75,15 +75,13 @@
 /*
 used for load all att values from main board , than will be saved into flash.
 0   | 1      | 2      | 3   | 4   | 5    | 6    | ... | n-1  | n
-236 | INDEXH | INDEXL | CHH | CHL | VALH | VALL | ... | 0xFF | 0xFF
-*/
+236 | INDEXH | INDEXL | CHH | CHL | VALH | VALL | ... | 0xFF | 0xFF */
 #define CMD_TYPE_ATT_LOAD				234
 
 /*
 used for load all pha values from main board , than will be saved into flash.
 0   | 1      |2     | 3   | 4   | 5    | 6    | ... | n-1  | n
-235 | INDEXH |INDEXL| CHH | CHL | VALH | VALL | ... | 0xFF | 0xFF
-*/
+235 | INDEXH |INDEXL| CHH | CHL | VALH | VALL | ... | 0xFF | 0xFF */
 #define CMD_TYPE_PHA_LOAD				233
 
 #define CMD_TYPE_UPDATE_VAL     232
@@ -148,6 +146,12 @@ LOCAL char *make_new_buf(long dest_type, int32_t *ch, int32_t *val, uint32_t ch_
     break;
     case DEST_ATT_PHA:
       buf[0] = CMD_TYPE_SET_PHA_ATT;
+    break;
+    case DEST_UPLD_ATT:
+      buf[0] = CMD_TYPE_ATT_LOAD;
+    break;
+    case DEST_UPLD_PHA:
+      buf[0] = CMD_TYPE_PHA_LOAD;
     break;
   }
 
