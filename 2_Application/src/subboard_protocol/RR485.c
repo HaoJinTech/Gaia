@@ -94,7 +94,7 @@ used for load all the channels with both pha and att.
 | N|     ATT     |      PHA      |
 | 0 111 1111 1111 1111 1111 1111 |
 |   VALH    |  VALM   |   VALL   | 
-ATT = ((VALH & 0x8f) << 4) | ((VALH & 0xf0) >> 4);
+ATT = ((VALH & 0x7f) << 4) | ((VALH & 0xf0) >> 4);
 PHA = ((VALM & 0xf) << 8) | VALL
 */
 #define CMD_TYPE_ATT_PHA_LOAD_EX  230
@@ -189,7 +189,7 @@ LOCAL char *make_new_buf(long dest_type, int32_t *ch, int32_t *val, uint32_t ch_
   return buf;
 }
 //该方法只给UPLD_ATT_PHA_EX使用
-LOCAL char *make_new_ex_buf(long dest_type, int32_t *ch, int32_t *val, uint32_t ch_num, uint32_t val_num, uint32_t *out_len)
+LOCAL char *make_new_ex_buf(long dest_type, int32_t *val, uint32_t ch_num, uint32_t val_num, uint32_t *out_len)
 {
   //该方法只给UPLD_ATT_PHA_EX使用
   if(dest_type != DEST_UPLD_ATT_PHA_EX){
@@ -321,12 +321,16 @@ LOCAL int32_t radio_rack_485_write(SUBBD_PROTOCOL *devs,BUS_DRIVER *bus, void *d
       MCMV *mcmv = (MCMV*)data;
       buf = make_new_buf(mcmv->dest_type, mcmv->channel, mcmv->value, mcmv->ch_lenth, 1, &out_len);
       bus->write(buf, out_len);
+      free(mcmv->channel);
+      free(mcmv->value);
       break;
     }
     case DATA_TYPE_MCMMV:{
       MCMMV *mcmmv = (MCMMV*)data;
       buf = make_new_buf(mcmmv->dest_type, mcmmv->channel, mcmmv->value, mcmmv->ch_lenth, mcmmv->val_count, &out_len);
       bus->write(buf, out_len);
+      free(mcmmv->channel);
+      free(mcmmv->value);
       break;
     }
     case DATA_TYPE_CCMV:
@@ -336,9 +340,10 @@ LOCAL int32_t radio_rack_485_write(SUBBD_PROTOCOL *devs,BUS_DRIVER *bus, void *d
     case DATA_TYPE_CCMMV:{
       CCMMV *ccmmv = (CCMMV*)data;
       if(ccmmv->dest_type == DEST_UPLD_ATT_PHA_EX){
-      }else{                                    /*不需要该参数，暂补*/
-        buf = make_new_ex_buf(ccmmv->dest_type, ccmmv->value,       ccmmv->value, ccmmv->ch_lenth, ccmmv->val_count, &out_len);
+        buf = make_new_ex_buf(ccmmv->dest_type, ccmmv->value, ccmmv->ch_lenth, ccmmv->val_count, &out_len);
         bus->write(buf, out_len);
+        free(ccmmv->value);
+      }else{                                    
       }
       break;
     }
@@ -346,8 +351,10 @@ LOCAL int32_t radio_rack_485_write(SUBBD_PROTOCOL *devs,BUS_DRIVER *bus, void *d
       break;
   }
 
-  free(buf);
-  free(data);
+  if(buf)
+    free(buf);
+  if(data)
+    free(data);
 
   return RET_OK;
 }

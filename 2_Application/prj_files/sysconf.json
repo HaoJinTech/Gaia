@@ -69,6 +69,8 @@
     },
 
     "CASE": {
-        "CASE_PATH": "case/"
+        "CASE_PATH": "case/",
+        "CASE_REMAP_ENABLE": 1,
+        "CASE_REMAP_INDEX": 0
     }
 }

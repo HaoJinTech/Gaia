@@ -20,6 +20,7 @@
 #include "bll/bll_calibration.h"
 #include "bll/bll_att.h"
 #include "bll/bll_pha.h"
+#include "bll/bll_ch_remap.h"
 
 #include <semaphore.h>
 #include <pthread.h>
@@ -72,6 +73,7 @@ typedef struct Case_item{
     char                    full_path[FULL_PATH_AND_CASE_NAME];      // file full path
     uint32_t                ch_max;          // channel number
     int32_t                *cha_array;      // 
+	int32_t				   *cha_remap_arr;
     uint32_t                first_line;      // 
     uint32_t                seek_cur;        // 
     
@@ -147,6 +149,8 @@ LOCAL int 			   s_mq_cs;
 LOCAL CASE_ITEM		   case_item_root;
 LOCAL SUBBD_PROTOCOL  *g_protocol_obj = 0;
 LOCAL BUS_DRIVER      *g_bus_obj = 0;
+LOCAL int     		g_remap_enable = 0;
+LOCAL int32_t 		g_remap_index = 0;
 
 #if 0
 LOCAL void case_exe_att(struct Case_item *case_item);
@@ -378,57 +382,73 @@ LOCAL int8_t upload_to_subboard(struct Case_item *case_item)
 	char *c_val;
 	uint32_t count;
 	int32_t *temp_att= NULL, *temp_pha=NULL;
+	int32_t temp_att_val, temp_pha_val;
+	int32_t *cha_temp_att = NULL, *cha_temp_pha = NULL;
 
 	g_protocol_obj->ioctrl(g_protocol_obj, IO_CTRL_MSG_START_CASE_UPLOAD, g_bus_obj);
 
 	case_item->val_count = 1;
-	if(case_item->case_type & CASE_TYPE_ATT){
-		temp_att = (int32_t*)malloc(sizeof(int32_t) * (case_item->ch_max+1));
-		case_item->val_count += case_item->ch_max;
-	}
-	if(case_item->case_type & CASE_TYPE_PHA){
-		temp_pha = (int32_t*)malloc(sizeof(int32_t) * (case_item->ch_max+1));
-		case_item->val_count += case_item->ch_max;
-	}
 	
 	case_item->line_max = 0;
 	while(1){
 		/* this c_val is interval(ms) for every line */
 		c_val = case_get_word(case_item, &new_line, &count);
 		if(!c_val){
-			APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE,
-				(" middle file created.\r\n"));
+			APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE, (" middle file created.\r\n"));
 			break;
+		}
+		if(case_item->case_type & CASE_TYPE_ATT){
+			cha_temp_att = (int32_t*)malloc(sizeof(int32_t) * (case_item->ch_max+1));
+			temp_att = (int32_t*)malloc(sizeof(int32_t) * (case_item->ch_max+1));
+			case_item->val_count += case_item->ch_max;
+		}
+		if(case_item->case_type & CASE_TYPE_PHA){
+			cha_temp_pha = (int32_t*)malloc(sizeof(int32_t) * (case_item->ch_max+1));
+			temp_pha = (int32_t*)malloc(sizeof(int32_t) * (case_item->ch_max+1));
+			case_item->val_count += case_item->ch_max;
 		}
 		/* line_max is keep increasing during the loading proccess, set the line delay */
 		case_item->interval_hs_arr[case_item->line_max] = atoi(c_val);
 		for(i=0; i<case_item->ch_max; i++){
 			if(case_item->case_type & CASE_TYPE_ATT){
 				if(new_line == 1){
-					temp_att[i] = 0;
+					temp_att_val = 0;
 				}else{
 					c_val = case_get_word(case_item, &new_line, &count);
-					temp_att[i] = atoi(c_val);
+					temp_att_val = atoi(c_val);
 				}
 			}
 			if(case_item->case_type & CASE_TYPE_PHA){
 				if(new_line == 1){
-					temp_pha[i] = 0;
+					temp_pha_val = 0;
 				}else{
 					c_val = case_get_word(case_item, &new_line, &count);
-					temp_pha[i] = atoi(c_val);
+					temp_pha_val = atoi(c_val);
 				}
 			}
 			if(calibration_is_enabled()){
 				if(case_item->case_type & CASE_TYPE_PHA &&
 				   case_item->case_type & CASE_TYPE_ATT)
-					temp_pha[i] = calibration_proc(case_item->cha_array[i], temp_att[i], temp_pha[i], &temp_att[i]);
+					temp_pha_val = calibration_proc(case_item->cha_array[i], temp_att_val, temp_pha_val, &temp_att_val);
 				else if(case_item->case_type & CASE_TYPE_PHA)
-					temp_pha[i] = calibration_proc(case_item->cha_array[i], get_att(case_item->cha_array[i]), 
-										temp_pha[i], NULL);
+					temp_pha_val = calibration_proc(case_item->cha_array[i], get_att(case_item->cha_array[i]), temp_pha_val, NULL);
 				else
-					calibration_proc(case_item->cha_array[i], temp_att[i], get_pha(case_item->cha_array[i]), &temp_att[i]);
+					calibration_proc(case_item->cha_array[i], temp_att_val, get_pha(case_item->cha_array[i]), &temp_att_val);
 			}
+
+			if(g_remap_enable){
+				if(case_item->case_type & CASE_TYPE_ATT)
+					cha_temp_att[i] = case_item->cha_remap_arr[i];
+				if(case_item->case_type & CASE_TYPE_PHA)
+					cha_temp_pha[i] = case_item->cha_remap_arr[i];
+			}else{
+				if(case_item->case_type & CASE_TYPE_ATT)
+					cha_temp_att[i] = case_item->cha_array[i];
+				if(case_item->case_type & CASE_TYPE_PHA)
+					cha_temp_pha[i] = case_item->cha_array[i];
+			}
+			temp_att[i] = temp_att_val;
+			temp_pha[i] = temp_pha_val;
 		}
 
 		/* get new line */
@@ -438,15 +458,13 @@ LOCAL int8_t upload_to_subboard(struct Case_item *case_item)
 		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE, ("upload line:%d\r\n",case_item->line_max));
 		/* send data to sub board after */
 		if(case_item->case_type & CASE_TYPE_ATT)
-			subbd_send_MCMV(DEST_UPLD_ATT, g_protocol_obj, g_bus_obj, case_item->cha_array, temp_att, case_item->ch_max);
+			subbd_send_MCMV(DEST_UPLD_ATT, g_protocol_obj, g_bus_obj, cha_temp_att, temp_att, case_item->ch_max);
 		if(case_item->case_type & CASE_TYPE_PHA)
-			subbd_send_MCMV(DEST_UPLD_PHA, g_protocol_obj, g_bus_obj, case_item->cha_array, temp_pha, case_item->ch_max);		
-
+			subbd_send_MCMV(DEST_UPLD_PHA, g_protocol_obj, g_bus_obj, cha_temp_pha, temp_pha, case_item->ch_max);		
+		
 		case_item->line_max += 1;
 	}
 
-	if(temp_att) free(temp_att);
-	if(temp_pha) free(temp_pha);
 	return CASE_ERROR_OK;
 }
 
@@ -456,21 +474,25 @@ LOCAL int8_t upload_to_subboard_ex(struct Case_item *case_item)
 	int i;
 	char *c_val;
 	uint32_t count;
-	int32_t *temp_att_pha;
+	int32_t *temp_att_pha = NULL;
+	int32_t temp_att, temp_pha;
+
+	if(!(case_item->case_type & (CASE_TYPE_ATT | CASE_TYPE_PHA))){
+		return RET_ERROR;
+	}
+	if(case_item->ch_max < get_pha_ch_max()){
+		return RET_ERROR;
+	}
 
 	g_protocol_obj->ioctrl(g_protocol_obj, IO_CTRL_MSG_START_CASE_UPLOAD, g_bus_obj);
 
 	case_item->val_count = 1;
-	if(!(case_item->case_type & (CASE_TYPE_ATT | CASE_TYPE_PHA))){
-		return RET_ERROR;
-	}
 	if(case_item->case_type & CASE_TYPE_ATT){
 		case_item->val_count += case_item->ch_max;
 	}
 	if(case_item->case_type & CASE_TYPE_PHA){
 		case_item->val_count += case_item->ch_max;
 	}
-	temp_att_pha = (int32_t*)malloc(sizeof(int32_t) * (case_item->val_count+1));
 	
 	case_item->line_max = 0;
 	while(1){
@@ -483,28 +505,36 @@ LOCAL int8_t upload_to_subboard_ex(struct Case_item *case_item)
 		}
 		/* line_max is keep increasing during the loading proccess, set the line delay */
 		case_item->interval_hs_arr[case_item->line_max] = atoi(c_val);
+		temp_att_pha = (int32_t*)malloc(sizeof(int32_t) * (case_item->val_count+1));
 		for(i=0; i<case_item->ch_max; i++){
 			if(case_item->case_type & CASE_TYPE_ATT){
 				if(new_line == 1){
-					temp_att_pha[i*2] = 0;
-
+					temp_pha = 0;
 				}else{
 					c_val = case_get_word(case_item, &new_line, &count);
-					temp_att_pha[i*2] = atoi(c_val);
+					temp_pha = atoi(c_val);
 				}
 			}
 			if(case_item->case_type & CASE_TYPE_PHA){
 				if(new_line == 1){
-					temp_att_pha[i*2+1] = 0;
+					temp_att = 0;
 				}else{
 					c_val = case_get_word(case_item, &new_line, &count);
-					temp_att_pha[i*2+1] = atoi(c_val);
+					temp_att = atoi(c_val);
 				}
 			}
 			if(calibration_is_enabled()){
 				// ATT = i*2, PHA = i*2+1
-				temp_att_pha[i*2+1] = calibration_proc(case_item->cha_array[i], 
-								temp_att_pha[i*2], temp_att_pha[i*2+1], &temp_att_pha[i*2]);
+				temp_pha = calibration_proc(case_item->cha_array[i], 
+								temp_att, temp_pha, &temp_att);
+			}
+
+			if(g_remap_enable){
+				temp_att_pha[case_item->cha_remap_arr[i]] = temp_att;
+				temp_att_pha[case_item->cha_remap_arr[i]+1] = temp_pha;
+			}else{
+				temp_att_pha[case_item->cha_array[i]] = temp_att;
+				temp_att_pha[case_item->cha_array[i]+1] = temp_pha;
 			}
 		}
 
@@ -519,7 +549,7 @@ LOCAL int8_t upload_to_subboard_ex(struct Case_item *case_item)
 		case_item->line_max += 1;
 	}
 
-	free(temp_att_pha);
+/*	free(temp_att_pha);*/
 	return CASE_ERROR_OK;
 }
 
@@ -615,6 +645,7 @@ LOCAL struct Case_item *upload_case(char *name)
 	}
 	case_item->ch_max = CHANNEL_BUFFER_ADD;
 	case_item->cha_array = (int32_t *)malloc(sizeof(int32_t)*case_item->ch_max);	
+
 	if(!case_item->cha_array){
 		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_SERIOUS ,
 			("cha_array malloc failed.\r\n"));		
@@ -656,16 +687,28 @@ LOCAL struct Case_item *upload_case(char *name)
 		}
 	}
 
+	if(g_remap_enable){
+		int i =0;
+		case_item->cha_remap_arr = (int32_t *)malloc(sizeof(int32_t)*case_item->ch_max);
+		for(i=0; i<case_item->ch_max; i++){
+			case_item->cha_remap_arr[i] = ch_remap(g_remap_index, case_item->cha_array[i]);
+		}
+	}
+
 	INIT_LIST_HEAD(&case_item->list);
     list_add(&case_item->list, &case_item_root.list);
-	
-	res = upload_to_subboard(case_item);
+	res = upload_to_subboard_ex(case_item);
+	if(res != RET_OK){
+		res = upload_to_subboard(case_item);
+	}
 	if(res<0){
 		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_SERIOUS, ("upload_to_subboard failed.\r\n"));		
 		goto end_failed;
 	}
-	free(case_item->buffer);
-	case_item->buffer = NULL;
+	if(case_item->buffer){
+		free(case_item->buffer);
+		case_item->buffer = NULL;
+	}
 	case_item->inner_ptr = NULL;
 	
 	close(fd);
@@ -673,6 +716,7 @@ LOCAL struct Case_item *upload_case(char *name)
 	case_item->state = CASE_STATE_STOP;
 	
 	return case_item;
+	
 end_failed:	
 	if(case_item->exe_mis){
 		free(case_item->exe_mis);
@@ -1026,6 +1070,9 @@ int32_t init_model_case_manager(json_object *case_json_obj)
     bus_id =    config_get_int(case_json_obj, "CASE_BUS", BUS_ID_SPI);
     if(bus_id > BUS_DRIVER_NUM) bus_id = BUS_ID_SPI;
     g_bus_obj = &bus_drivers[bus_id];
+
+	g_remap_enable =config_get_bool(case_json_obj, "CASE_REMAP_ENABLE", 0);
+    g_remap_index = config_get_int(case_json_obj, "CASE_REMAP_INDEX", 0);
 
     init_runner_thread();
 	INIT_LIST_HEAD(&case_item_root.list);
