@@ -26,14 +26,13 @@ LOCAL void cmd_CSSTOP(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun)
     int32_t ret = 0;
 
 	obj = parse_cmd(recv_buf, CMD_TOK);
-	send_buf_fun(dest_fd, "%s ", KEY_CSSTOP);
     case_name = cmd_obj_get_str(obj, 1);
     if(!case_name){
 	    send_buf_fun(dest_fd, CMD_INVALID_PARAM);
     	goto end;
     }
 
-	case_item = *get_case_item(case_name);
+	case_item = get_case_item(case_name);
 	state = get_case_state(case_item, casestate, 32);
 	if(case_item){
 		if(state != CASE_STATE_RUN){

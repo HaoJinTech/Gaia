@@ -372,7 +372,7 @@ int32_t bus_spi_sendLength(uint32_t len)
 //>>>>>>> a797dff93ddb1dedd994bd30ca253e4fbbf76f80
 } */
 
-void *bus_spi_read(char *buff, int len)
+int32_t bus_spi_read(char *buff, int len)
 {
 	transfer(fd, empty, buff, len);
 	return buff;

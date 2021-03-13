@@ -18,6 +18,8 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
+#include <errno.h>
 
 /* Private typedef -----------------------------------------------------------*/
 /* protocol cmds **************************************************************/
@@ -85,6 +87,17 @@ used for load all pha values from main board , than will be saved into flash.
 #define CMD_TYPE_PHA_LOAD				233
 
 #define CMD_TYPE_UPDATE_VAL     232
+
+/*
+used for load all the channels with both pha and att.
+|0   | 1    | 2    | 3    | ... | n-1  | n    |
+|230 | VALH | VALM | VALL | ... | 0xFF | 0xFF |
+-----------------------------------------------------
+| N|     ATT     |      PHA      |
+| 0 111 1111 1111 1111 1111 1111 |
+|   VALH    |  VALM   |   VALL   | */
+#define CMD_TYPE_ATT_PHA_LOAD_EX  230
+
 /******************************************************************************/
 
 #define START_LOAD_WAIT_TIME_S  3  
@@ -96,19 +109,22 @@ used for load all pha values from main board , than will be saved into flash.
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-BUS_DRIVER *init_bus = 0;  // used for subboard init, usually is rs232
-const char init_subboard_msg[] = {CMD_TYPE_INIT_EX, 0, 0, 0, 0, 255, 255};
-const char start_load_msg[] = {CMD_TYPE_START_LOAD, 255, 255};
-uint32_t    s_board_num = 0;
-uint32_t    s_board_ch = 0;
+typedef struct rr485_data{
+  BUS_DRIVER *init_bus;  // used for subboard init, usually is rs232
+  uint32_t    s_board_num;
+  uint32_t    s_board_ch;
+}RR485_DATA;
+
+LOCAL const char init_subboard_msg[] = {CMD_TYPE_INIT_EX, 0, 0, 0, 0, 255, 255};
+LOCAL const char start_load_msg[] = {CMD_TYPE_START_LOAD, 255, 255};
 
 /* Private function prototypes -----------------------------------------------*/
-LOCAL int32_t radio_rack_485_init(void *param);
-LOCAL int32_t radio_rack_485_open(void *param);
-LOCAL int32_t radio_rack_485_write(BUS_DRIVER *bus, void *data);
-LOCAL void   *radio_rack_485_read(BUS_DRIVER *bus, int len);
-LOCAL int32_t radio_rack_485_ioctrl(int request, ...);
-LOCAL int32_t radio_rack_485_close(void *param);
+LOCAL int32_t radio_rack_485_init(SUBBD_PROTOCOL *devs,void *param);
+LOCAL int32_t radio_rack_485_open(SUBBD_PROTOCOL *devs,void *param);
+LOCAL int32_t radio_rack_485_write(SUBBD_PROTOCOL *devs,BUS_DRIVER *bus, void *data);
+LOCAL void   *radio_rack_485_read(SUBBD_PROTOCOL *devs,BUS_DRIVER *bus, int len);
+LOCAL int32_t radio_rack_485_ioctrl(SUBBD_PROTOCOL *devs,int request, ...);
+LOCAL int32_t radio_rack_485_close(SUBBD_PROTOCOL *devs,void *param);
 
 LOCAL char *make_new_buf(long dest_type, int32_t *ch, int32_t *val, uint32_t ch_num, uint32_t val_num, uint32_t *out_len);
 
@@ -136,6 +152,7 @@ LOCAL char *make_new_buf(long dest_type, int32_t *ch, int32_t *val, uint32_t ch_
   uint32_t i =0;
   uint32_t j =0;
   for(i=0; i<ch_num; i++){
+    ch[i]++; // start at 1, not 0
     // channel;
     buf[buf_i] = ((ch[i] >> 7) & 0x7f);
     buf_i++;
@@ -157,50 +174,65 @@ LOCAL char *make_new_buf(long dest_type, int32_t *ch, int32_t *val, uint32_t ch_
   return buf;
 }
 
-LOCAL int32_t radio_rack_485_init(void *param)
+LOCAL int32_t radio_rack_485_init(SUBBD_PROTOCOL *devs, void *param)
 {
-  init_bus = (BUS_DRIVER*) param;
-  if(!init_bus)
+  devs->data = malloc(sizeof(RR485_DATA));
+  if(!devs->data)
+    return RET_ERROR;
+  RR485_DATA *data = (RR485_DATA*)devs->data;
+  data->init_bus = (BUS_DRIVER*)param;
+  if(!data->init_bus)
     return RET_ERROR;
 
   return RET_OK;
 }
 
-LOCAL int32_t radio_rack_485_open(void *param)
+LOCAL int32_t radio_rack_485_open(SUBBD_PROTOCOL *devs, void *param)
 {
+  RR485_DATA *data = (RR485_DATA*)devs->data;
+  BUS_DRIVER *init_bus = data->init_bus;
   if(!init_bus)
     return RET_ERROR;
 
   int32_t open_retry_times=0;
+  int32_t read_size;
+  int err;
 
 open_retry:
-   init_bus->write(init_subboard_msg, sizeof(init_subboard_msg));
+  data->s_board_ch = 0;
+  data->s_board_num = 0;
+  init_bus->write(init_subboard_msg, sizeof(init_subboard_msg));
 
   struct timespec ts;
-  uint8_t rxbuf[8];
+  char *rxbuf = malloc(sizeof(char) * 8);
   do{
     if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
         APP_DEBUGF(RR485_DEBUG | APP_DBG_LEVEL_WARNING, ("clock_gettime error.\r\n"));
     ts.tv_sec += RF_OPEN_RX_TIMEOUT_S;
-    err = sem_timedwait(init_bus->sem_rx_ready, &ts);
-    if(err == ETIMEDOUT) break;
-    else(err != 0) {
-      APP_DEBUGF(RR485_DEBUG | APP_DBG_LEVEL_WARNING, ("sem_timedwait error.\r\n"));
-      break;
+    if(init_bus->sem_rx_ready){
+      err = sem_timedwait(init_bus->sem_rx_ready, &ts);
+      if(err == ETIMEDOUT) break;
+      else if(err != 0) {
+        APP_DEBUGF(RR485_DEBUG | APP_DBG_LEVEL_WARNING, ("sem_timedwait error.\r\n"));
+        break;
+      }
+    }else{
+      usleep(100000);
     }
-
     read_size = init_bus->read(rxbuf, 8);
     if(read_size == 6 && rxbuf[0] == 253){ //CMD_TYPE_INIT
-      if(s_board_num < rxbuf[1]+1){
-        s_board_num = rxbuf[1]+1;
-        s_board_ch = rxbuf[2]+s_board_ch;
+      if(data->s_board_num < rxbuf[1]+1){
+        data->s_board_num = rxbuf[1]+1;
+        data->s_board_ch = rxbuf[2]+data->s_board_ch;
       }
       APP_DEBUGF(RR485_DEBUG | APP_DBG_TRACE, 
         ("get rf info: board_num:%d,board_ch:%d,board_step:%d\r\n",rxbuf[1]+1,rxbuf[2],rxbuf[3]));
+    }else{
+      break;
     }
   }while(1);
 
-  if(s_board_ch == 0){
+  if(data->s_board_ch == 0){
     APP_DEBUGF(RR485_DEBUG | APP_DBG_STATE, 
     ("get rf board init info failed,try again.\r\n"));
     if(open_retry_times<RF_DEV_OPEN_RETRY_TIME){
@@ -209,12 +241,13 @@ open_retry:
       goto open_retry;
     }
   }
+  free(rxbuf);
   APP_DEBUGF(RR485_DEBUG | APP_DBG_STATE, 
-    ("s_board_num = %d,s_board_ch = %d.\r\n", s_board_num,s_board_ch));
+    ("s_board_num = %d,s_board_ch = %d.\r\n", data->s_board_num, data->s_board_ch));
   return RET_OK;
 }
 
-LOCAL int32_t radio_rack_485_write(BUS_DRIVER *bus, void *data)
+LOCAL int32_t radio_rack_485_write(SUBBD_PROTOCOL *devs,BUS_DRIVER *bus, void *data)
 {
   long data_type = *(long*)data;
   char *buf = 0;
@@ -251,8 +284,14 @@ LOCAL int32_t radio_rack_485_write(BUS_DRIVER *bus, void *data)
       break;
     case DATA_TYPE_CCSV:
       break;
-    case DATA_TYPE_CCMMV:
+    case DATA_TYPE_CCMMV:{
+      CCMMV *ccmmv = (CCMMV*)data;
+      if(ccmmv->dest_type == DEST_UPLD_ATT_PHA_EX){
+      }else{
+
+      }
       break;
+    }
     default:
       break;
   }
@@ -263,14 +302,14 @@ LOCAL int32_t radio_rack_485_write(BUS_DRIVER *bus, void *data)
   return RET_OK;
 }
 
-LOCAL void *radio_rack_485_read(BUS_DRIVER *bus, int len)
+LOCAL void *radio_rack_485_read(SUBBD_PROTOCOL *devs, BUS_DRIVER *bus, int len)
 {
   APP_ASSERT("bus == NULL", bus);
 
   return 0;
 }
 
-LOCAL int32_t radio_rack_485_ioctrl(int request, ...)
+LOCAL int32_t radio_rack_485_ioctrl(SUBBD_PROTOCOL *devs, int request, ...)
 {
   BUS_DRIVER *bus;
   va_list arg_ptr;
@@ -291,6 +330,7 @@ LOCAL int32_t radio_rack_485_ioctrl(int request, ...)
         if(bus){
           line_num = va_arg(arg_ptr, uint32_t);
           char line_update_msg[] = {CMD_TYPE_UPDATE_VAL, ((line_num >> 7) & 0x7f), (line_num & 0x7f), 255, 255};
+        	APP_DEBUGF_HEX(RR485_DEBUG | APP_DBG_TRACE, line_update_msg, 5);
           bus->write(line_update_msg, sizeof(line_update_msg));
         }
       }
@@ -302,13 +342,14 @@ LOCAL int32_t radio_rack_485_ioctrl(int request, ...)
   return RET_OK;
 }
 
-LOCAL int32_t radio_rack_485_close(void *param)
+LOCAL int32_t radio_rack_485_close(SUBBD_PROTOCOL *devs, void *param)
 {
   return 0;
 }
 
 /* Public functions ----------------------------------------------------------*/
 #define RR485 {PROTOCOL_ID_RR485,   \
+              NULL,NULL,\
               radio_rack_485_init,  \
               radio_rack_485_open,  \
               radio_rack_485_write, \

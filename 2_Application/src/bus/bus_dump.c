@@ -14,6 +14,7 @@
 #include "bus_prototype.h"
 #include "app_debug.h"
 
+#include <string.h>
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 #define BUS_DUMP_DEBUG        APP_DBG_ON
@@ -41,10 +42,10 @@ int32_t bus_dump_write(const char *data, uint32_t len)
     return len;
 }
 
-void   *bus_dump_read(char *data, int len)
+int32_t bus_dump_read(char *data, int len)
 {
 	APP_DEBUGF(BUS_DUMP_DEBUG | APP_DBG_TRACE, ("read data:0x%x, len:%d.\r\n",(int32_t)data,len));
-    return NULL;
+    return snprintf(data, len, "test");
 }
 
 int32_t bus_dump_ioctrl(BUS_CTRL_MSG *msg)
@@ -60,6 +61,7 @@ int32_t bus_dump_close(void *param)
 }
 
 #define BUS_DUMP   {BUS_ID_DUMP,   \
+                   NULL,\
                    bus_dump_init,  \
                    bus_dump_open,  \
                    bus_dump_write, \

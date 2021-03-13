@@ -16,6 +16,8 @@
 #include "list.h"
 #include "sys_config.h"
 #include "subboard_manager.h"
+#include "bll/protocol_env.h"
+#include "bll/bll_calibration.h"
 
 #include <semaphore.h>
 #include <pthread.h>
@@ -55,11 +57,11 @@ typedef struct Case_item{
 #define CASE_NAME_LEN							256
     char                    case_name[CASE_NAME_LEN];      // case file name
     CASE_STATE              state;           // state of the case
+	struct timespec			ts;				 // get real time every loop
     timer_t                 timer;           // posix timer
     int32_t                 times;           // repit times
     uint8_t                 case_type;       // case type,   1 for att, 2 for pha, 3 for both.
     struct Case_mission     *exe_mis;        // missions
-
     /* file stuff */
     int                     fd;              // file handler
     char                    *full_path;      // file full path
@@ -108,6 +110,10 @@ struct Case_frame_exe_item
 #define CASE_MISSION_MSG_ID                0x71 		// magic number
 #define BUFF_SEM_TIMEOUT				   2  			// 2s
 
+#define TIME_NS_PER_S   1000000000
+#define TIME_NS_PER_MS	1000000
+#define TIME_MS_PER_S	1000
+
 #define FILE_EXTENSION_LOWERCASE	".csv" 
 #define FILE_EXTENSION_CAPITAL		".CSV" 
 #define FILE_EXTENSION_MIDDLE		".bufferfile" 
@@ -127,10 +133,14 @@ struct Case_frame_exe_item
 #define CASE_ERROR					-1
 #define CASE_ERROR_FORMAT			-40
 
+#define CASE_NAME_CSV_LEN   		256
+#define CASE_FULL_PATH_LEN  		256
+
+
+#define FULL_PATH_AND_CASE_NAME		CASE_FULL_PATH_LEN + CASE_NAME_CSV_LEN
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 LOCAL const char 	*s_folder;
-#define CASE_FULL_PATH_LEN  256
 LOCAL char          case_full_path[CASE_FULL_PATH_LEN];
 LOCAL pthread_t 	cs_thread;
 LOCAL int 			   s_mq_cs;
@@ -165,7 +175,6 @@ LOCAL void case_continue(struct Case_item *case_item);
 LOCAL void unload_case(struct Case_item *case_item);
 LOCAL uint8_t case_end(struct Case_item *case_item);
 
-LOCAL struct Case_item *get_case_item(char *name);
 LOCAL void case_frame_sender(union sigval param);
 LOCAL uint32_t reload_buffer(struct Case_item* case_item, int fd);
 LOCAL char* split_word(char *src, char **inner_ptr, uint8_t *new_line);
@@ -212,6 +221,7 @@ LOCAL char* split_word(char *src, char **inner_ptr, uint8_t *new_line)
 	char *inner_temp = *inner_ptr;
 	if(src == NULL) str = *inner_ptr;
 	if(*inner_ptr == NULL) inner_temp = src;
+	if(inner_temp == NULL) return NULL;
 	if(*inner_temp == '\0') return NULL;
 	while(str!= NULL){
 		if(*str == WORD_TMN || *str == WORD_INTER_TMN){
@@ -247,7 +257,7 @@ LOCAL char* case_get_word(struct Case_item *case_item, uint8_t *new_line, uint32
 		word = split_word(case_item->buffer, &case_item->inner_ptr, new_line);
 	}
 	if(count) *count = case_item->inner_ptr - word;
-	
+//	APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE ,("get word: %s.\r\n", word));
 	return word;
 }
 
@@ -256,6 +266,8 @@ LOCAL uint8_t case_end(struct Case_item *case_item)
 	APP_ASSERT("case_end: case_item == NULL.\r\n",case_item);
 
 	case_item->current_line = 0;
+	APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE ,
+		("case(%s) times left(%d).\r\n",case_item->case_name,case_item->times));
 	if(case_item->times == 0){
 		case_stop(case_item);
 		return 1;
@@ -269,7 +281,7 @@ static void sendCMD_NextStep_tosunboard(struct Case_item *case_item)
 {
 	APP_ASSERT("sendCMD_NextStep_tosunboard: Free pointer.\r\n", case_item!= NULL);
 	
-	g_protocol_obj->ioctrl(IO_CTRL_MSG_UPDATE_CASE_LINE, g_bus_obj, case_item->current_line);
+	g_protocol_obj->ioctrl(g_protocol_obj, IO_CTRL_MSG_UPDATE_CASE_LINE, g_bus_obj, case_item->current_line);
 }
 
 LOCAL void case_frame_exe(CASE_ITEM *case_item)
@@ -313,12 +325,24 @@ LOCAL void case_frame_exe(CASE_ITEM *case_item)
 	}else{
 		interval = case_item->interval_hs_arr[case_item->current_line];
 	}
-	if(interval<1) interval = 1;
+	if(interval<1) interval = case_item->interval_hspeed;
+
+	case_item->ts.tv_sec += (interval / TIME_MS_PER_S);
+	case_item->ts.tv_nsec += (interval % TIME_MS_PER_S) * TIME_NS_PER_MS;
+	if(case_item->ts.tv_nsec> TIME_NS_PER_S){
+		case_item->ts.tv_sec++;
+		case_item->ts.tv_nsec -= TIME_NS_PER_S;
+	}
 	struct itimerspec its;
 	memset(&its, 0, sizeof(struct itimerspec));
-	its.it_value.tv_sec = interval / 1000;
-    its.it_value.tv_nsec = (interval % 1000) * 1000000;
-	timer_settime(case_item->timer,0,&its,NULL);
+
+	// minus the time err to make it correct
+	its.it_value.tv_sec = case_item->ts.tv_sec;
+    its.it_value.tv_nsec = case_item->ts.tv_nsec;
+
+//	APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE ,
+//		("offset_sec:%ld,offset_nsec%ld.\r\n",its.it_value.tv_sec,its.it_value.tv_nsec));
+	timer_settime(case_item->timer, TIMER_ABSTIME, &its, NULL);
 
 	if(!case_item->flag_hspeed) {
 #if 0
@@ -352,11 +376,10 @@ LOCAL int8_t upload_to_subboard(struct Case_item *case_item)
 	uint8_t new_line;
 	int i;
 	char *c_val;
-	uint32_t index;
 	uint32_t count;
 	int32_t *temp_att, *temp_pha;
 
-	g_protocol_obj->ioctrl(IO_CTRL_MSG_START_CASE_UPLOAD, g_bus_obj);
+	g_protocol_obj->ioctrl(g_protocol_obj, IO_CTRL_MSG_START_CASE_UPLOAD, g_bus_obj);
 
 	case_item->val_count = 1;
 	if(case_item->case_type & CASE_TYPE_ATT){
@@ -379,25 +402,25 @@ LOCAL int8_t upload_to_subboard(struct Case_item *case_item)
 		}
 		/* line_max is keep increasing during the loading proccess, set the line delay */
 		case_item->interval_hs_arr[case_item->line_max] = atoi(c_val);
-		index =0;
 		for(i=0; i<case_item->ch_max; i++){
 			if(case_item->case_type & CASE_TYPE_ATT){
 				if(new_line == 1){
-					temp_att[index] = 0;
+					temp_att[i] = 0;
 				}else{
 					c_val = case_get_word(case_item, &new_line, &count);
-					temp_att[index] = atoi(c_val);
+					temp_att[i] = atoi(c_val);
 				}
-				index +=1;
 			}
 			if(case_item->case_type & CASE_TYPE_PHA){
 				if(new_line == 1){
-					temp_pha[index] = 0;
+					temp_pha[i] = 0;
 				}else{
 					c_val = case_get_word(case_item, &new_line, &count);
-					temp_pha[index] = atoi(c_val);
+					temp_pha[i] = atoi(c_val);
 				}
-				index +=1;
+			}
+			if(calibration_is_enabled()){
+				temp_pha[i] = calibration_proc(case_item->cha_array[i], temp_att[i], temp_pha[i], &temp_att[i]);
 			}
 		}
 
@@ -405,6 +428,7 @@ LOCAL int8_t upload_to_subboard(struct Case_item *case_item)
 		while(!new_line)
 			case_get_word(case_item, &new_line, &count);
 		
+		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE, ("upload line:%d\r\n",case_item->line_max));
 		/* send data to sub board after */
 		subbd_send_MCMV(DEST_UPLD_ATT, g_protocol_obj, g_bus_obj, case_item->cha_array, temp_att, case_item->ch_max);
 		subbd_send_MCMV(DEST_UPLD_PHA, g_protocol_obj, g_bus_obj, case_item->cha_array, temp_pha, case_item->ch_max);		
@@ -414,6 +438,79 @@ LOCAL int8_t upload_to_subboard(struct Case_item *case_item)
 
 	free(temp_att);
 	free(temp_pha);
+	return CASE_ERROR_OK;
+}
+
+LOCAL int8_t upload_to_subboard_ex(struct Case_item *case_item)
+{
+	uint8_t new_line;
+	int i;
+	char *c_val;
+	uint32_t count;
+	int32_t *temp_att_pha;
+
+	g_protocol_obj->ioctrl(g_protocol_obj, IO_CTRL_MSG_START_CASE_UPLOAD, g_bus_obj);
+
+	case_item->val_count = 1;
+	if(!(case_item->case_type & CASE_TYPE_ATT | CASE_TYPE_PHA)){
+		return RET_ERROR;
+	}
+	if(case_item->case_type & CASE_TYPE_ATT){
+		case_item->val_count += case_item->ch_max;
+	}
+	if(case_item->case_type & CASE_TYPE_PHA){
+		case_item->val_count += case_item->ch_max;
+	}
+	temp_att_pha = (int32_t*)malloc(sizeof(int32_t) * (case_item->val_count+1));
+	
+	case_item->line_max = 0;
+	while(1){
+		/* this c_val is interval(ms) for every line */
+		c_val = case_get_word(case_item, &new_line, &count);
+		if(!c_val){
+			APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE,
+				(" middle file created.\r\n"));
+			break;
+		}
+		/* line_max is keep increasing during the loading proccess, set the line delay */
+		case_item->interval_hs_arr[case_item->line_max] = atoi(c_val);
+		for(i=0; i<case_item->ch_max; i++){
+			if(case_item->case_type & CASE_TYPE_ATT){
+				if(new_line == 1){
+					temp_att_pha[i*2] = 0;
+
+				}else{
+					c_val = case_get_word(case_item, &new_line, &count);
+					temp_att_pha[i*2] = atoi(c_val);
+				}
+			}
+			if(case_item->case_type & CASE_TYPE_PHA){
+				if(new_line == 1){
+					temp_att_pha[i*2+1] = 0;
+				}else{
+					c_val = case_get_word(case_item, &new_line, &count);
+					temp_att_pha[i*2+1] = atoi(c_val);
+				}
+			}
+			if(calibration_is_enabled()){
+				// ATT = i*2, PHA = i*2+1
+				temp_att_pha[i*2+1] = calibration_proc(case_item->cha_array[i], 
+								temp_att_pha[i*2], temp_att_pha[i*2+1], &temp_att_pha[i*2]);
+			}
+		}
+
+		/* get new line */
+		while(!new_line)
+			case_get_word(case_item, &new_line, &count);
+		
+		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE, ("upload line:%d\r\n",case_item->line_max));
+		/* send data to sub board after */
+		subbd_send_CCMMV(DEST_UPLD_ATT_PHA_EX, g_protocol_obj, g_bus_obj, 0, temp_att_pha, 2, case_item->ch_max);
+
+		case_item->line_max += 1;
+	}
+
+	free(temp_att_pha);
 	return CASE_ERROR_OK;
 }
 
@@ -436,7 +533,8 @@ LOCAL void case_frame_sender(union sigval param)
 
 LOCAL void full_case_name(char *dest, char *src, uint32_t dest_len)
 {
-	strncpy(dest, src, CASE_NAME_LEN);
+	memset(dest,0,dest_len);
+	strncpy(dest, src, dest_len);
 	if(!strstr(src, FILE_EXTENSION_LOWERCASE) &&
 		!strstr(src, FILE_EXTENSION_CAPITAL)){
 		strcat(dest, ".csv\0");
@@ -445,7 +543,7 @@ LOCAL void full_case_name(char *dest, char *src, uint32_t dest_len)
 
 LOCAL struct Case_item *upload_case(char *name)
 {
-	char *full_path = NULL;
+	char full_path[FULL_PATH_AND_CASE_NAME];
 	int fd;
 	struct Case_item *case_item;
 	uint8_t new_line;
@@ -453,20 +551,16 @@ LOCAL struct Case_item *upload_case(char *name)
 	char *c_case_type, *c_ch;
 	uint32_t iter;
 	uint32_t first_line = 0;
-#define CASE_NAME_CSV_LEN   128
 	char case_name_csv[CASE_NAME_CSV_LEN];
 	int8_t res;
 	
 	APP_ASSERT("upload_case: Free pointer.\r\n", name!= NULL);
-
 	full_case_name(case_name_csv, name, CASE_NAME_CSV_LEN);
-	full_path = (char*)malloc(strlen(case_full_path)+strlen(case_name_csv)+5);
-	sprintf(full_path, "%s/%s", case_full_path, name);
+	snprintf(full_path, FULL_PATH_AND_CASE_NAME, "%s%s", case_full_path, case_name_csv);
 
 	fd = open(full_path, O_RDONLY , 0);
-
 	if(fd < 0){
-		free(full_path);
+		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_SERIOUS, ("file can not open (%s).\r\n", full_path));	
 		return NULL;
 	}
 	
@@ -486,6 +580,7 @@ LOCAL struct Case_item *upload_case(char *name)
 	case_item->interval_hspeed = 10; // 10 ms for default
 	case_item->exe_mis->mission_id = CASE_MISSION_EXE;
 	case_item->exe_mis->data = (void*)case_item;
+	case_item->exe_mis->msg_id = CASE_MISSION_MSG_ID;
 	case_item->fd = -1;
 	case_item->mid_fd = -1;
 	case_item->buffer = (char*)malloc(sizeof(char)* CASE_BUFFER_SIZE+ 16);
@@ -496,13 +591,15 @@ LOCAL struct Case_item *upload_case(char *name)
 	}
 	memset(case_item->buffer, 0, sizeof(char)*CASE_BUFFER_SIZE);
 	case_item->fd = fd;
-	strncpy(case_item->case_name, name, CASE_NAME_LEN);
+	strncpy(case_item->case_name, case_name_csv, CASE_NAME_LEN);
 
 	case_item->full_path = full_path;
 
 	c_case_type = case_get_word(case_item, &new_line, &count);
 	first_line += count;
 	case_item->case_type = atoi(c_case_type);
+	APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE ,
+			("case_type = %d.\r\n", case_item->case_type));	
 	if(!(case_item->case_type & CASE_TYPE_ATT) && 
 		 !(case_item->case_type & CASE_TYPE_PHA)){
 		goto end_failed;
@@ -552,7 +649,7 @@ LOCAL struct Case_item *upload_case(char *name)
 
 	INIT_LIST_HEAD(&case_item->list);
     list_add(&case_item->list, &case_item_root.list);
-
+	
 	res = upload_to_subboard(case_item);
 	if(res<0){
 		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_SERIOUS, ("upload_to_subboard failed.\r\n"));		
@@ -583,7 +680,6 @@ end_failed:
 	if(case_item->full_path){
 		free(case_item->full_path);
 		case_item->full_path = NULL;
-		full_path = NULL;
 	}
 	if(case_item)
 		free(case_item);
@@ -629,6 +725,12 @@ LOCAL int case_start(struct Case_item *case_item)
 #endif
 	}
 
+	struct timespec ts;
+	if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_WARNING ,("clock_gettime error.\r\n"));
+	case_item->ts.tv_sec = ts.tv_sec;
+	case_item->ts.tv_nsec = ts.tv_nsec;
+	
 	struct itimerspec its;
 	memset(&its, 0, sizeof(struct itimerspec));
 	its.it_value.tv_sec = 0;
@@ -720,6 +822,12 @@ LOCAL void case_continue(struct Case_item *case_item)
 	}
 	case_item->state = CASE_STATE_RUN;
 
+	struct timespec ts;
+	if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_WARNING ,("clock_gettime error.\r\n"));
+	case_item->ts.tv_sec = ts.tv_sec;
+	case_item->ts.tv_nsec = ts.tv_nsec;
+
 	struct itimerspec its;
 	memset(&its, 0, sizeof(struct itimerspec));
 	// set 0 to stop the timer.	
@@ -773,6 +881,7 @@ LOCAL void *case_runner_thread_entry(void* parameter)
 			APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_SEVERE, ("mq recive failed.(code:%d)\r\n",size));
 			break;
 		}
+		//APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE, ("recive mq, ID:%d\r\n",(int)case_mission.mission_id));
 		switch(case_mission.mission_id){
 			case CASE_MISSION_EXE:
 				case_frame_exe((CASE_ITEM *)case_mission.data);
@@ -783,7 +892,7 @@ LOCAL void *case_runner_thread_entry(void* parameter)
 			break;
 			case CASE_MISSION_HS_LOAD:
 				upload_case((char*)case_mission.data);
-				//free(case_mission.data);
+				free(case_mission.data);
 			break;
 			case CASE_MISSION_UNLD:
 				unload_case((CASE_ITEM *)case_mission.data);
@@ -819,7 +928,7 @@ LOCAL CASE_MISSION_MSG *init_misson_msg(CASE_MISSION_MSG *miss_msg, CASE_MISSION
 LOCAL int snd_misson_msg(CASE_MISSION_MSG *case_mission_msg)
 {
 	int ret = 0;
-    ret = msgsnd(s_mq_cs, (void *)&case_mission_msg, sizeof(CASE_MISSION_MSG)-sizeof(long), 0);
+    ret = msgsnd(s_mq_cs, (void *)case_mission_msg, sizeof(CASE_MISSION_MSG)-sizeof(long), 0);
     if(ret<0){
 		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_LEVEL_WARNING, 
 			("msg send failed.(code:%d)\r\n",ret));
@@ -829,14 +938,20 @@ LOCAL int snd_misson_msg(CASE_MISSION_MSG *case_mission_msg)
 }
 /* Public functions ----------------------------------------------------------*/
 
-
 int32_t send_upload_misson(char *case_name)
 {
 	if(!case_name)
 		return RET_ERROR;
+	uint32_t caselen= strlen(case_name);
+
+	caselen++;
+
+	char *case_name_cpy = malloc(sizeof(char) * caselen+3);
+	memset(case_name_cpy, 0 ,caselen+1);
+	strncpy(case_name_cpy, case_name, caselen+1);
 
 	CASE_MISSION_MSG case_mission_msg;
-	init_misson_msg(&case_mission_msg, CASE_MISSION_HS_LOAD, case_name);
+	init_misson_msg(&case_mission_msg, CASE_MISSION_HS_LOAD, case_name_cpy);
 	return snd_misson_msg(&case_mission_msg);
 }
 
@@ -905,9 +1020,9 @@ int32_t init_model_case_manager(json_object *case_json_obj)
     if(protocol_id > SUBBD_PROTOCOL_SIZE) protocol_id = PROTOCOL_ID_RR485;
     g_protocol_obj = &protocols[protocol_id];
 
-    bus_id =        config_get_int(case_json_obj, "CASE_BUS", BUS_ID_SPI);
+    bus_id =    config_get_int(case_json_obj, "CASE_BUS", BUS_ID_SPI);
     if(bus_id > BUS_DRIVER_NUM) bus_id = BUS_ID_SPI;
-    g_bus_obj =     &bus_drivers[bus_id];
+    g_bus_obj = &bus_drivers[bus_id];
 
     init_runner_thread();
 	INIT_LIST_HEAD(&case_item_root.list);
@@ -919,11 +1034,15 @@ struct Case_item *get_case_item(char *name)
 {
 	struct Case_item *iter;
 	uint32_t case_name_len = 0, name_len = 0;
+	char case_name_csv[CASE_NAME_CSV_LEN];
+	
+	full_case_name(case_name_csv, name, CASE_NAME_CSV_LEN);
+
     list_for_each_entry(iter, &case_item_root.list, list){
 		case_name_len = strlen(iter->case_name);
-		name_len = strlen(name);
+		name_len = strlen(case_name_csv);
 		if(name_len == case_name_len &&
-		0 == strncmp(iter->case_name, name, case_name_len)){
+		0 == strncmp(iter->case_name, case_name_csv, case_name_len)){
             return iter;
 		}
     }
@@ -974,7 +1093,7 @@ CASE_STATE get_case_state(struct Case_item *case_item, char *out_state, uint32_t
 uint32_t get_case_line_max(struct Case_item *case_item)
 {
 	if(case_item){
-		return case_name->line_max;
+		return case_item->line_max;
 	}
 	return 0;
 }
@@ -982,9 +1101,18 @@ uint32_t get_case_line_max(struct Case_item *case_item)
 uint32_t get_case_times(struct Case_item *case_item)
 {
 	if(case_item){
-		return case_name->times;
+		return case_item->times;
 	}
 	return 0;
+}
+
+uint32_t set_case_times(struct Case_item *case_item, uint32_t times)
+{
+	if(case_item){
+		case_item->times = times;
+		return RET_OK;
+	}
+	return RET_ERROR;
 }
 
 uint32_t get_case_current_line(struct Case_item *case_item)
@@ -995,12 +1123,30 @@ uint32_t get_case_current_line(struct Case_item *case_item)
 	return 0;
 }
 
+uint32_t set_case_current_line(struct Case_item *case_item, uint32_t line)
+{
+	if(case_item){
+		case_item->current_line = line;
+		return RET_OK;
+	}
+	return RET_ERROR;
+}
+
+uint32_t set_case_interval(struct Case_item *case_item, uint32_t interval)
+{
+	if(case_item){
+		case_item->interval_hspeed = interval;
+		return RET_OK;
+	}
+	return RET_ERROR;
+}
+
 int32_t check_case_exist(char *name)
 {
-#define CASE_NAME_CSV_LEN   256
 	char case_name_csv[CASE_NAME_CSV_LEN];
-	char full_path[CASE_NAME_CSV_LEN]
+	char full_path[FULL_PATH_AND_CASE_NAME];
 	struct Case_item *case_item = NULL;
+	int fd;
 
 	if(!name)
 		return 0;
@@ -1010,14 +1156,14 @@ int32_t check_case_exist(char *name)
 		return 1;
 	}else{
 		full_case_name(case_name_csv, name, CASE_NAME_CSV_LEN);
-		sprintf(full_path, "%s/%s", case_full_path, name);
+		snprintf(full_path, FULL_PATH_AND_CASE_NAME, "%s%s", case_full_path, case_name_csv);
 		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE, ("full_path:%s.\r\n", full_path));		
 
 		fd = open(full_path, O_RDONLY , 0);
 		if(fd < 0){
 			return 0;
 		}
-		clase(fd);
+		close(fd);
 		return 1;
 	}
 }

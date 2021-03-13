@@ -14,6 +14,7 @@
 #include "bll_case_manager.h"
 
 #define KEY_CSUPLD "CSUPLD"
+#define CASE_STATE_LEN 32
 
 LOCAL void cmd_CSUPLD(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun)
 {
@@ -22,17 +23,18 @@ LOCAL void cmd_CSUPLD(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun)
 	CMD_PARSE_OBJ *obj = NULL;
 	int32_t case_exist = 0;
     CASE_STATE state;
-    char casestate[32];
+    char casestate[CASE_STATE_LEN];
 
 	obj = parse_cmd(recv_buf, CMD_TOK);
     case_name = cmd_obj_get_str(obj, 1);
     if(!case_name){
-    	goto failed_end;
+	    send_buf_fun(dest_fd, CMD_INVALID_PARAM);
+    	goto end;
     }
 
-	case_item = *get_case_item(case_name);
+	case_item = get_case_item(case_name);
 	if(case_item){
-		state = get_case_state(case_item, casestate, 32);
+		state = get_case_state(case_item, casestate, CASE_STATE_LEN);
 		if(state != CASE_STATE_UNLOADED){
 			free_cmd_obj(obj);
 			send_buf_fun(dest_fd, "FAIL\r\n%s %s %s\r\n",KEY_CSUPLD, case_name, casestate);
@@ -51,7 +53,6 @@ LOCAL void cmd_CSUPLD(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun)
 	send_upload_misson(case_name);
 
 end:
-    send_buf_fun(dest_fd, CMD_INVALID_PARAM);
     free_cmd_obj(obj);
 }
 

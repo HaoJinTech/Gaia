@@ -32,21 +32,22 @@ struct Case_item;
 
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
-
 #define RET_ERROR_CASE_UNLOAD     -101
 #define RET_ERROR_CASE_BUSY       -102
 
 /* Exported functions --------------------------------------------------------*/ 
-
 int32_t init_model_case_manager(json_object *case_json_obj);
 
-// get status and attributes
+// get set status and attributes
 const char *get_case_full_path(void);
 struct Case_item *get_case_item(char *name);
 CASE_STATE get_case_state(struct Case_item *case_item, char *out_state, uint32_t strlen);
 uint32_t get_case_line_max(struct Case_item *case_item);
 uint32_t get_case_times(struct Case_item *case_item);
+uint32_t set_case_times(struct Case_item *case_item, uint32_t times);
 uint32_t get_case_current_line(struct Case_item *case_item);
+uint32_t set_case_current_line(struct Case_item *case_item, uint32_t line);
+uint32_t set_case_interval(struct Case_item *case_item, uint32_t interval);
 
 // msg related stuffs
 int32_t send_upload_misson(char *case_name);

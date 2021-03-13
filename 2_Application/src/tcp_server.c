@@ -245,7 +245,7 @@ LOCAL void listen_loop(uint32_t sock_fd)
 
         if (ret < 0) {
             APP_DEBUGF(TCP_DEBUG | APP_DBG_LEVEL_SEVERE, ("epoll event err!\n"));
-            break;
+            continue;//break;
         } else if (ret == 0) {
             continue;
         }
@@ -253,8 +253,9 @@ LOCAL void listen_loop(uint32_t sock_fd)
         for (i = 0; i < ret; i++) {
             if ((eventList[i].events & EPOLLERR) || (eventList[i].events & EPOLLHUP) || !(eventList[i].events & EPOLLIN)) {
                 APP_DEBUGF(TCP_DEBUG | APP_DBG_LEVEL_SEVERE, ("epoll error\n"));
-                close_sock(eventList[i].data.fd);
-                exit(-1);
+                continue;
+                //close_sock(eventList[i].data.fd);
+                //exit(-1);
             }
 
             if (eventList[i].events & EPOLLRDHUP) {

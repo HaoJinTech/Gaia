@@ -46,7 +46,7 @@ LOCAL void cmd_CSINFO(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun)
 {
     CMD_PARSE_OBJ *obj = NULL;
 #define CASE_FILE_NAME_LEN  128
-    char case_name[CASE_FILE_NAME_LEN];
+    char *case_name;
   	DIR* dirp;
     int32_t ret;
 
@@ -55,14 +55,15 @@ LOCAL void cmd_CSINFO(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun)
     if(case_name){
       cmd_CSINFO_print_stuff(case_name, dest_fd, send_buf_fun);
     }else{
+      char case_name_temp[CASE_FILE_NAME_LEN];
       dirp = search_folder_start();
       if(!dirp) {
           send_buf_fun(dest_fd, "%s can not open dir(%s)", KEY_CSINFO, get_case_full_path());
       }
       do{
-          ret = search_folder_get_name(dirp, case_name, CASE_FILE_NAME_LEN, NULL);
+          ret = search_folder_get_name(dirp, case_name_temp, CASE_FILE_NAME_LEN, NULL);
           if(ret != RET_OK) break;
-          cmd_CSINFO_print_stuff(case_name, dest_fd, send_buf_fun);
+          cmd_CSINFO_print_stuff(case_name_temp, dest_fd, send_buf_fun);
 
       }while(ret == RET_OK);
       search_folder_end(dirp);

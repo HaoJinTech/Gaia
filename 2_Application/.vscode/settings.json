@@ -7,6 +7,9 @@
         "signal.h": "c",
         "unistd.h": "c",
         "fcntl.h": "c",
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "bll_ch_remap.h": "c",
+        "protocol_env.h": "c",
+        "bll_calibration.h": "c"
     }
 }
