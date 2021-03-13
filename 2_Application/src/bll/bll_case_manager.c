@@ -18,6 +18,8 @@
 #include "subboard_manager.h"
 #include "bll/protocol_env.h"
 #include "bll/bll_calibration.h"
+#include "bll/bll_att.h"
+#include "bll/bll_pha.h"
 
 #include <semaphore.h>
 #include <pthread.h>
@@ -377,7 +379,7 @@ LOCAL int8_t upload_to_subboard(struct Case_item *case_item)
 	int i;
 	char *c_val;
 	uint32_t count;
-	int32_t *temp_att, *temp_pha;
+	int32_t *temp_att= NULL, *temp_pha=NULL;
 
 	g_protocol_obj->ioctrl(g_protocol_obj, IO_CTRL_MSG_START_CASE_UPLOAD, g_bus_obj);
 
@@ -420,7 +422,14 @@ LOCAL int8_t upload_to_subboard(struct Case_item *case_item)
 				}
 			}
 			if(calibration_is_enabled()){
-				temp_pha[i] = calibration_proc(case_item->cha_array[i], temp_att[i], temp_pha[i], &temp_att[i]);
+				if(case_item->case_type & CASE_TYPE_PHA &&
+				   case_item->case_type & CASE_TYPE_ATT)
+					temp_pha[i] = calibration_proc(case_item->cha_array[i], temp_att[i], temp_pha[i], &temp_att[i]);
+				else if(case_item->case_type & CASE_TYPE_PHA)
+					temp_pha[i] = calibration_proc(case_item->cha_array[i], get_att(case_item->cha_array[i]), 
+										temp_pha[i], NULL);
+				else
+					calibration_proc(case_item->cha_array[i], temp_att[i], get_pha(case_item->cha_array[i]), &temp_att[i]);
 			}
 		}
 
@@ -430,14 +439,16 @@ LOCAL int8_t upload_to_subboard(struct Case_item *case_item)
 		
 		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE, ("upload line:%d\r\n",case_item->line_max));
 		/* send data to sub board after */
-		subbd_send_MCMV(DEST_UPLD_ATT, g_protocol_obj, g_bus_obj, case_item->cha_array, temp_att, case_item->ch_max);
-		subbd_send_MCMV(DEST_UPLD_PHA, g_protocol_obj, g_bus_obj, case_item->cha_array, temp_pha, case_item->ch_max);		
+		if(case_item->case_type & CASE_TYPE_ATT)
+			subbd_send_MCMV(DEST_UPLD_ATT, g_protocol_obj, g_bus_obj, case_item->cha_array, temp_att, case_item->ch_max);
+		if(case_item->case_type & CASE_TYPE_PHA)
+			subbd_send_MCMV(DEST_UPLD_PHA, g_protocol_obj, g_bus_obj, case_item->cha_array, temp_pha, case_item->ch_max);		
 
 		case_item->line_max += 1;
 	}
 
-	free(temp_att);
-	free(temp_pha);
+	if(temp_att) free(temp_att);
+	if(temp_pha) free(temp_pha);
 	return CASE_ERROR_OK;
 }
 
