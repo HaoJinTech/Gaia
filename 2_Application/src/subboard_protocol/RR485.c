@@ -319,8 +319,9 @@ LOCAL int32_t radio_rack_485_write(SUBBD_PROTOCOL *devs,BUS_DRIVER *bus, void *d
     case DATA_TYPE_CCMMV:{
       CCMMV *ccmmv = (CCMMV*)data;
       if(ccmmv->dest_type == DEST_UPLD_ATT_PHA_EX){
-      }else{
-
+      }else{                                    /*不需要该参数，暂补*/
+        buf = make_new_ex_buf(ccmmv->dest_type, ccmmv->value,       ccmmv->value, ccmmv->ch_lenth, ccmmv->val_count, &out_len);
+        bus->write(buf, out_len);
       }
       break;
     }
