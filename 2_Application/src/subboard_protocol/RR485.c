@@ -134,9 +134,11 @@ LOCAL char *make_new_buf(long dest_type, int32_t *ch, int32_t *val, uint32_t ch_
 {
   char *buf = 0;
   uint32_t len = 0;
-  len = sizeof(char) * ((ch_num + ch_num * val_num ) * 2 + 3);
+  len = sizeof(char) * ((ch_num + ch_num * val_num ) * 2 + 3 + 3);
   *out_len = len;
   buf = (char*)malloc(len);
+  uint32_t buf_i=1;
+
   switch(dest_type){
     case DEST_ATT:
       buf[0] = CMD_TYPE_SET;
@@ -149,13 +151,18 @@ LOCAL char *make_new_buf(long dest_type, int32_t *ch, int32_t *val, uint32_t ch_
     break;
     case DEST_UPLD_ATT:
       buf[0] = CMD_TYPE_ATT_LOAD;
+      buf[1] = 0;
+      buf[2] = 0;
+      buf_i = 3;
     break;
     case DEST_UPLD_PHA:
       buf[0] = CMD_TYPE_PHA_LOAD;
+      buf[1] = 0;
+      buf[2] = 0;
+      buf_i = 3;
     break;
   }
 
-  uint32_t buf_i=1;
   uint32_t i =0;
   uint32_t j =0;
   int32_t ch_temp = 0;
