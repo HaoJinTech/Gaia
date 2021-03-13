@@ -42,7 +42,7 @@ int32_t bus_dump_write(const char *data, uint32_t len)
     return len;
 }
 
-int32_t bus_dump_read(char *data, int len)
+int32_t bus_dump_read(char *data, uint32_t len)
 {
 	APP_DEBUGF(BUS_DUMP_DEBUG | APP_DBG_TRACE, ("read data:0x%x, len:%d.\r\n",(int32_t)data,len));
     return snprintf(data, len, "test");

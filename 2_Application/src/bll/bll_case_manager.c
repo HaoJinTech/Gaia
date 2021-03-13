@@ -452,7 +452,7 @@ LOCAL int8_t upload_to_subboard_ex(struct Case_item *case_item)
 	g_protocol_obj->ioctrl(g_protocol_obj, IO_CTRL_MSG_START_CASE_UPLOAD, g_bus_obj);
 
 	case_item->val_count = 1;
-	if(!(case_item->case_type & CASE_TYPE_ATT | CASE_TYPE_PHA)){
+	if(!(case_item->case_type & (CASE_TYPE_ATT | CASE_TYPE_PHA))){
 		return RET_ERROR;
 	}
 	if(case_item->case_type & CASE_TYPE_ATT){
