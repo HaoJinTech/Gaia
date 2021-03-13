@@ -14,7 +14,7 @@
 
 #define MAXNAMELENGHT           1024
 #define DEFAULTBAUDRATE         115200
-#define UART                    "dev/ttyeAMA1"
+#define UART                    "/dev/ttyAMA1"
 LOCAL char *uart_Name;
 LOCAL uint32_t uart_baudrate;
 LOCAL int fd;
