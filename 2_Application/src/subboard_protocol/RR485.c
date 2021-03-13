@@ -173,6 +173,38 @@ LOCAL char *make_new_buf(long dest_type, int32_t *ch, int32_t *val, uint32_t ch_
 
   return buf;
 }
+//该方法只给UPLD_ATT_PHA_EX使用
+LOCAL char *make_new_ex_buf(long dest_type, int32_t *ch, int32_t *val, uint32_t ch_num, uint32_t val_num, uint32_t *out_len)
+{
+  //该方法只给UPLD_ATT_PHA_EX使用
+  if(dest_type != DEST_UPLD_ATT_PHA_EX){
+    return NULL;
+  }
+  //初始化值，进行内存分配
+  char *buf = 0;
+  uint32_t len = 0;
+  len = sizeof(char) * (ch_num * val_num * 3  + 3);
+  *out_len = len;
+  buf = (char*)malloc(len);
+  
+  buf[0] = CMD_TYPE_ATT_PHA_LOAD_EX;
+  //逐index获取值并解码
+  uint32_t buf_i=1;
+  uint32_t i =0;
+  for(i=0; i<ch_num; i++){
+    buf[buf_i] = ((val[i * 2] >> 4) & 0x7f);
+    buf_i++;
+    buf[buf_i] = (val[i * 2] & 0xf) << 4;
+    buf[buf_i] += (val[i * 2 + 1] >> 8);
+    buf_i++;
+    buf[buf_i] = (val[i * 2 + 1] & 0xff);
+    buf_i++;
+  }
+  buf[buf_i] = 255;
+  buf_i++;
+  buf[buf_i] = 255;
+  buf_i++;
+}
 
 LOCAL int32_t radio_rack_485_init(SUBBD_PROTOCOL *devs, void *param)
 {
