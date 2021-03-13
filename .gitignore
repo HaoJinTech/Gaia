@@ -1,3 +1,4 @@
+2_Application/obj/*
 2_Application/obj/bll_manager.o
 2_Application/obj/rbuffer.o
 2_Application/src/bus/bus_spi.c
@@ -20,3 +21,4 @@
 2_Application/obj/CRC.o
 2_Application/obj/bll_remap.o
 2_Application/obj/bll_ch_remap.o
+2_Application/obj/bll_case_manager.o

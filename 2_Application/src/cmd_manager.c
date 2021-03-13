@@ -33,7 +33,7 @@ typedef struct cmd_msg{
 } CMD_MSG;
 
 /* Private define ------------------------------------------------------------*/
-#define CMD_DEBUG                       APP_DBG_ON
+#define CMD_DEBUG                       APP_DBG_OFF
 
 /* Private macro -------------------------------------------------------------*/
 #define CMD_MSG_TYPE        0x0015
@@ -63,7 +63,7 @@ int32_t cmd_obj_get_int(CMD_PARSE_OBJ *obj, uint32_t index)
 char *cmd_obj_get_str(CMD_PARSE_OBJ *obj, uint32_t index)
 {
     if(index >= obj->num)
-        return 0;
+        return NULL;
     return obj->words[index];
 }
 

@@ -20,7 +20,7 @@
 
     "PHA": {
         "PHA_MAX_CH": 2048,
-        "PHA_MAX_VAL": 365,
+        "PHA_MAX_VAL": 359,
         "PHA_PROTOCOL": 0,
         "PHA_BUS": 0,
         "PHA_REMAP_ENABLE": 1,
@@ -66,5 +66,9 @@
                 "REMAP_FILE": "map_pha_128X16_2048_DT.csv"
             }
         ]
+    },
+
+    "CASE": {
+        "CASE_PATH": "case/"
     }
 }

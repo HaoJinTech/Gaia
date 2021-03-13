@@ -12,8 +12,11 @@
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef  _BUS_PROTOTYPE_H_
 #define  _BUS_PROTOTYPE_H_
+
 /* Includes ------------------------------------------------------------------*/
 #include "platform.h"
+#include <semaphore.h>
+
 /* Exported types ------------------------------------------------------------*/
 typedef struct bus_ctrl_msg
 {
@@ -23,8 +26,8 @@ typedef struct bus_ctrl_msg
 
 typedef int32_t (*bus_init)(uint32_t port, uint32_t freq, void *res);
 typedef int32_t (*bus_open)(void);
-typedef int32_t (*bus_write)(char *data, uint32_t len);
-typedef void   *(*bus_read)(char *data, int len);
+typedef int32_t (*bus_write)(const char *data, uint32_t len);
+typedef int32_t (*bus_read)(char *data, uint32_t len);
 typedef int32_t (*bus_ioctrl)(BUS_CTRL_MSG *msg);
 typedef int32_t (*bus_close)(void *param);
 
@@ -32,6 +35,7 @@ typedef struct bus_driver
 {
     int     bus_id;
 
+    sem_t      *sem_rx_ready;
     bus_init   init;
     bus_open   open;
     bus_write  write;

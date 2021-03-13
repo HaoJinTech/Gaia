@@ -29,12 +29,6 @@
 #define BUS_ID_SPI      1
 #define BUS_ID_UART     2
 
-/* DEST TYPE */
-#define DEST_ATT        0x01
-#define DEST_PHA        0x02
-#define DEST_ATT_PHA    0x03
-#define DEST_SWITCH     0x10
-
 #define LOCAL              static
 #define RET_OK             1
 #define RET_ERROR         -1

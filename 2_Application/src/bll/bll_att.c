@@ -17,6 +17,8 @@
 #include "bll/bll_pha.h"
 #include "bll/bll_calibration.h"
 #include "bll/bll_ch_remap.h"
+#include "bll/protocol_env.h"
+
 #include <stdlib.h>
 
 /* Private typedef -----------------------------------------------------------*/
@@ -113,11 +115,11 @@ int32_t init_att(json_object *att_obj)
     g_remap_index = config_get_int(att_obj, "ATT_REMAP_INDEX", 0);
     protocol_id =   config_get_int(att_obj, "ATT_PROTOCOL", PROTOCOL_ID_RR485);
     if(protocol_id > SUBBD_PROTOCOL_SIZE) protocol_id = PROTOCOL_ID_RR485;
-    g_protocol_obj = &protocols[protocol_id];
+    g_protocol_obj = get_protocol_obj(protocol_id);
 
     bus_id =        config_get_int(att_obj, "ATT_BUS", BUS_ID_SPI);
     if(bus_id > BUS_DRIVER_NUM) bus_id = BUS_ID_SPI;
-    g_bus_obj =     &bus_drivers[bus_id];
+    g_bus_obj =     get_bus_obj(bus_id);
 
     g_att_vals =    (int32_t*)malloc(sizeof(int32_t) * g_ch_max);
 

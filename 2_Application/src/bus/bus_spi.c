@@ -1,65 +1,79 @@
 /**
   ******************************************************************************
   * @file    spi_bus.c
-  * @author  YORK
+  * @author  JACK.Chen
   * @version V0.1.0
   * @date    03-02-2021
   * @brief   
   *       
 	********** Copyright (C), 2014-2015,HJ technologies **************************
 	*/
-	
 /* Includes ------------------------------------------------------------------*/
 #include "platform.h"
 #include "bus_prototype.h"
+#include "app_debug.h"
+#include "CRC.h"
 #include <stdint.h>
 #include <unistd.h>
-#include "app_debug.h"
 #include <stdio.h>
-#include <list.h>
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
+#include <time.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
-#include "CRC.h"
 /* Private typedef -----------------------------------------------------------*/
-//需要处理的消息队列
-typedef struct Message_Type{
-	uint16_t MsgId;
-	char* MessageInfo;
-	struct list_head Node;
-};
 #define SPI_DEBUG  APP_DBG_ON
 /* Private define ------------------------------------------------------------*/
 #define ARRAY_SIZE(a) 				(sizeof(a) / sizeof((a)[0]))
-#define Empty_Msg_BufferLength 		8
+
+#define Empty_Msg_BufferLength 		9
 #define MSG_HEAD 					0x02
-#define MSG_END 					0x0D
-#define MAXPACKLENGTH 				1024
+#define MSG_END 					0x04
+#define MSG_NOCMD					0x00
+#define MSG_SENDLENGTH				0x01
+#define MSG_QUERYPACK				0x02
+#define RECV_ACK					0x06
+#define RECV_NCK					0x15
+#define MAX_PACKLENGTH 				1021
+#define MAX_PACK					20
+#define PACK_GATE					10
+#define DEVICE_NAME_LENTH  64
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-#define DEVICE_NAME_LENTH  64
-static const char device[DEVICE_NAME_LENTH] = "/dev/spidev0.0";
+static char device[DEVICE_NAME_LENTH] = "/dev/spidev0.0";
 static uint32_t mode;
 static uint8_t bits = 8;
 static uint32_t speed = 21000000;
 static uint16_t delay;
-static int verbose;
-static char empty[Empty_Msg_BufferLength];
+static uint8_t MsgId = 0;
+static uint8_t empty[Empty_Msg_BufferLength];
+static time_t time_op;//, time_ed;
+//test
+static int32_t Sent_packs = 0;
+static int32_t error_packs = 0;
+static int CRC_Warning = 0;
+static int RemainPack = 0;
+static uint8_t FullsizePack[MAX_PACKLENGTH + 6];
 //ACK包格式 0X02开头 0x04结尾
-struct list_head MessageQueueList;
-
-char *input_tx;
-int ret = 0;
-int fd;
-uint8_t *tx;
-uint8_t *rx;
-int size;
+static uint8_t ResevedMsg[MAX_PACKLENGTH + 6];
+static int ret = 0;
+static uint8_t bus_spi_RecvCRC = 0;
+static int fd;
+static uint8_t resendcount = 0;
 /* Private function prototypes -----------------------------------------------*/
-
+static uint8_t GetMsgID()
+{
+	MsgId++;
+	return MsgId;
+}
+static uint8_t MsgIDCountDown()
+{
+	MsgId--;
+	return MsgId;
+}
 //打印收发数据包的hex值和ascii值
 static void hex_dump(const void *src, size_t length, size_t line_size, char *prefix)
 {
@@ -68,7 +82,7 @@ static void hex_dump(const void *src, size_t length, size_t line_size, char *pre
 	const unsigned char *line = address;
 	unsigned char c;
  
-	printf("%s | ", prefix);
+	printf("%s\t | ", prefix);
 	while (length-- > 0) {
 		printf("%02X ", *address++);
 		if (!(++i % line_size) || (length == 0 && i % line_size)) {
@@ -87,31 +101,14 @@ static void hex_dump(const void *src, size_t length, size_t line_size, char *pre
 		}
 	}
 }
-/*
- *  Unescape - process hexadecimal escape character
- *      converts shell input "x23" -> 0x23
- */
-static int unescape(char *_dst, char *_src, size_t len)
+
+static void pabort(const char *s)
 {
-	int ret = 0;
-	char *src = _src;
-	char *dst = _dst;
-	unsigned int ch;
- 
-	while (*src) {
-		if (*src == NULL && *(src+1) == 'x') {
-			sscanf(src + 2, "%2x", &ch);
-			src += 4;
-			*dst++ = (unsigned char)ch;
-		} else {
-			*dst++ = *src++;
-		}
-		ret++;
-	}
-	return ret;
+	perror(s);
+	abort();
 }
 //单包收发处理
-static void transfer(int fd, uint8_t const *tx, uint8_t const *rx, size_t len)
+static void transfer(int fd, const uint8_t *tx, uint8_t *rx, size_t len)
 {
 	int ret;
  
@@ -141,247 +138,437 @@ static void transfer(int fd, uint8_t const *tx, uint8_t const *rx, size_t len)
  
 	ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
 	if (ret < 1)
-		;//pabort("can't send spi message");
- 
-	if (verbose)
-		hex_dump(tx, len, 32, "TX");
-	hex_dump(rx, len, 32, "RX");
+		pabort("can't send spi message");
 }
 
-#if 0
-//打印帮助信息
-static void print_usage(const char *prog)
+static int32_t io_spi_write(uint8_t *data, uint32_t len)
 {
-	printf("Usage: %s [-DsbdlHOLC3]\n", prog);
-	puts("  -D --device   device to use (default /dev/spidev0.0)\n"
-	     "  -s --speed    max speed (Hz)\n"
-	     "  -d --delay    delay (usec)\n"
-	     "  -b --bpw      bits per word \n"
-	     "  -l --loop     loopback\n"
-	     "  -H --cpha     clock phase\n"
-	     "  -O --cpol     clock polarity\n"
-	     "  -L --lsb      least significant bit first\n"
-	     "  -C --cs-high  chip select active high\n"
-	     "  -3 --3wire    SI/SO signals shared\n"
-	     "  -v --verbose  Verbose (show tx buffer)\n"
-	     "  -p            Send data (e.g. \"1234xdexad\")\n"
-	     "  -N --no-cs    no chip select\n"
-	     "  -R --ready    slave pulls low to pause\n"
-	     "  -2 --dual     dual transfer\n"
-	     "  -4 --quad     quad transfer\n");
-	exit(1);
+	uint8_t crccode;
+	uint8_t packmsg[len + 4];
+	uint8_t readmsg[len + 4];
+	memset(packmsg, 0, len + 4);
+	memset(readmsg, 0, len + 4);
+	packmsg[0] = MSG_HEAD;
+	packmsg[1]= GetMsgID();
+	memcpy(packmsg + 2, data, len);
+	packmsg[len + 2] = MSG_END;
+	crccode = crc_high_first(packmsg, len + 3);
+	packmsg[len + 3] = crccode;
+	memset(ResevedMsg, 0, len + 4);
+	memcpy(ResevedMsg, packmsg, len + 4);
+	transfer(fd, packmsg, readmsg, len + 4);
+	return 0;
 }
-//根据参数配置
-static void parse_opts(int argc, char *argv[])
+
+static void io_spi_read(uint8_t *buff, int len)
 {
-	while (1) {
-		static const struct option lopts[] = {
-			{ "device",  1, 0, 'D' },
-			{ "speed",   1, 0, 's' },
-			{ "delay",   1, 0, 'd' },
-			{ "bpw",     1, 0, 'b' },
-			{ "loop",    0, 0, 'l' },
-			{ "cpha",    0, 0, 'H' },
-			{ "cpol",    0, 0, 'O' },
-			{ "lsb",     0, 0, 'L' },
-			{ "cs-high", 0, 0, 'C' },
-			{ "3wire",   0, 0, '3' },
-			{ "no-cs",   0, 0, 'N' },
-			{ "ready",   0, 0, 'R' },
-			{ "dual",    0, 0, '2' },
-			{ "verbose", 0, 0, 'v' },
-			{ "quad",    0, 0, '4' },
-			{ NULL, 0, 0, 0 },
-		};
-		int c;
- 
-		c = getopt_long(argc, argv, "D:s:d:b:lHOLC3NR24p:v", lopts, NULL);
- 
-		if (c == -1)
-			break;
- 
-		switch (c) {
-		case 'D':
-			device = optarg;
-			break;
-		case 's':
-			speed = atoi(optarg);
-			break;
-		case 'd':
-			delay = atoi(optarg);
-			break;
-		case 'b':
-			bits = atoi(optarg);
-			break;
-		case 'l':
-			mode |= SPI_LOOP;
-			break;
-		case 'H':
-			mode |= SPI_CPHA;
-			break;
-		case 'O':
-			mode |= SPI_CPOL;
-			break;
-		case 'L':
-			mode |= SPI_LSB_FIRST;
-			break;
-		case 'C':
-			mode |= SPI_CS_HIGH;
-			break;
-		case '3':
-			mode |= SPI_3WIRE;
-			break;
-		case 'N':
-			mode |= SPI_NO_CS;
-			break;
-		case 'v':
-			verbose = 1;
-			break;
-		case 'R':
-			mode |= SPI_READY;
-			break;
-		case 'p':
-			input_tx = optarg;
-			break;
-		case '2':
-			mode |= SPI_TX_DUAL;
-			break;
-		case '4':
-			mode |= SPI_TX_QUAD;
-			break;
-		default:
-			print_usage(argv[0]);
+	resendcount =0;
+Reget:
+	transfer(fd, empty, buff, len);
+
+	//是否有全一样的包，有就说明副板没准备好，再收一次
+	char temp = buff[0];
+	int resend = 1;
+	int i = 0;
+	while(i < len - 1)
+	{
+		i++;
+		if(temp != buff[i])
+		{
+			resend = 0;
 			break;
 		}
 	}
-	if (mode & SPI_LOOP) {
-		if (mode & SPI_TX_DUAL)
-			mode |= SPI_RX_DUAL;
-		if (mode & SPI_TX_QUAD)
-			mode |= SPI_RX_QUAD;
+	if(resend == 1)
+	{
+		resendcount++;
+		if(resendcount >= 100)
+		{
+			printf("Re-receive pack error, 100 times trying.\n");
+		}
+		else
+			goto Reget;
+	}	
+	//再收一次逻辑结束
+
+	if(crc_high_first(buff, len - 1) == buff[len - 1])
+	{
+		bus_spi_RecvCRC = 1;
+	}
+	else
+	{
+		bus_spi_RecvCRC = 0;
 	}
 }
-#endif
+
+//应该交由上层管理控制
+static int32_t MSG_SendData(uint8_t* packdata,uint32_t len)
+{
+	uint8_t readbuff[Empty_Msg_BufferLength];
+	memset(readbuff, 0, Empty_Msg_BufferLength);
+	//发送指令信息	
+Resend:
+	io_spi_write(packdata, len);
+	//接收指令的回复
+	io_spi_read(readbuff, Empty_Msg_BufferLength);
+	Sent_packs++;
+
+	if(bus_spi_RecvCRC == 0)
+	{
+		hex_dump(ResevedMsg, len + 4, 32,"CRCSEND");
+		hex_dump(readbuff, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "CRCERR");
+	}
+	if(readbuff[0] == MSG_HEAD && readbuff[Empty_Msg_BufferLength -2] == MSG_END)
+	{
+		if(readbuff[2] == RECV_ACK)
+		{
+			if(bus_spi_RecvCRC == 0)
+			{
+				printf("CRC Error, but get correct return\n");
+			}
+			return 0;
+		}
+		else if(readbuff[2] == RECV_NCK)
+		{
+			hex_dump(ResevedMsg, len + 4, 32,"NCKSEND");
+			hex_dump(readbuff, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "NCKRECV");
+			error_packs++;
+			if(readbuff[1] == MsgId)
+			{
+				//正确收发完成，并且副板无法执行主板下发的指令要求，需要上层处理
+				return -2;
+			}
+			else if(readbuff[1] == MsgId - 1)
+			{
+				printf("Can Resend the last pack.\n");
+				MsgIDCountDown();
+				goto Resend;
+			}
+			else
+			{
+				printf("Cann't Resend the last pack with MsgID<%d>.\n", readbuff[1]);
+			}
+		}
+	}
+	error_packs++;
+	hex_dump(readbuff, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "ERR");
+	printf("Can not receive a correct pack, resend the last message.\n");
+	MsgIDCountDown();
+	goto Resend;
+}
+
+static int32_t MSG_SendLength(uint32_t len, uint32_t pack)
+{
+	//制作长度包下发
+	uint8_t data[Empty_Msg_BufferLength - 4] = {0,};
+	data[0] = MSG_SENDLENGTH;
+	data[1] = len >> 8;
+	data[2] = len & 0xFF;
+	if(pack > 0)
+	{
+		data[3] = pack >> 8;
+		data[4] = pack & 0xFF;
+	}
+	uint8_t readbuff[Empty_Msg_BufferLength];
+	memset(readbuff, 0, Empty_Msg_BufferLength);
+	//发送指令信息	
+Resend:
+	io_spi_write(data, sizeof(data));
+	//接收指令的回复
+	io_spi_read(readbuff, Empty_Msg_BufferLength);
+	Sent_packs++;
+
+	if(bus_spi_RecvCRC == 0)
+	{
+		hex_dump(ResevedMsg, sizeof(data) + 4, 32,"CRCSEND");
+		hex_dump(readbuff, Empty_Msg_BufferLength, Empty_Msg_BufferLength, "CRCERR");
+	}
+	if(readbuff[0] == MSG_HEAD && readbuff[Empty_Msg_BufferLength -2] == MSG_END)
+	{
+		if(readbuff[2] == RECV_ACK)
+		{
+			if(bus_spi_RecvCRC == 0)
+			{
+				printf("CRC Error, but get correct return\n");
+			}
+			return 0;
+		}
+		else if(readbuff[2] == RECV_NCK)
+		{
+			hex_dump(ResevedMsg, sizeof(data) + 4, 32,"NCKSEND");
+			hex_dump(readbuff, Empty_Msg_BufferLength, Empty_Msg_BufferLength, "NCKRECV");
+			error_packs++;
+			if(readbuff[1] == MsgId)
+			{
+				//正确收发完成，并且副板无法执行主板下发的指令要求，需要上层处理
+				return -2;
+			}
+			else if(readbuff[1] == MsgId - 1)
+			{
+				printf("Can Resend the last pack.\n");
+				MsgIDCountDown();
+				goto Resend;
+			}
+			else
+			{
+				printf("Cann't Resend the last pack with MsgID<%d>.\n", readbuff[1]);
+
+			}
+		}
+	}
+	error_packs++;
+	hex_dump(readbuff, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "ERR");
+	printf("Can not receive a correct pack, resend the last message.\n");
+	MsgIDCountDown();
+	goto Resend;
+}
+
+//应该交由上层管理控制
+static int32_t MSG_SendQUERYPACK(void)
+{
+	//制作长度包下发
+	uint8_t data[Empty_Msg_BufferLength - 4] = {0,};
+	data[0] = MSG_QUERYPACK;
+	uint8_t readbuff[Empty_Msg_BufferLength];
+	memset(readbuff, 0, Empty_Msg_BufferLength);
+	CRC_Warning = 0;
+Resend:
+	//发送指令信息	
+	io_spi_write(data, sizeof(data));
+	//接收指令的回复
+	io_spi_read(readbuff, Empty_Msg_BufferLength);
+	Sent_packs++;
+	if(bus_spi_RecvCRC == 0)
+	{
+		hex_dump(ResevedMsg, sizeof(data) + 4, 32,"CRCSEND");
+		hex_dump(readbuff, Empty_Msg_BufferLength, 32, "CRCERR");
+	}
+	if(readbuff[0] == MSG_HEAD && readbuff[Empty_Msg_BufferLength -2] == MSG_END)
+	{
+		if(readbuff[2] == MSG_QUERYPACK)
+		{
+			uint8_t remainpack = readbuff[3];
+			if(bus_spi_RecvCRC == 0)
+			{
+				printf("CRC Error, but get value:%d\n", remainpack);
+			}
+			return remainpack;
+		}
+		else if(readbuff[2] == RECV_NCK)
+		{
+			hex_dump(ResevedMsg, sizeof(data) + 4, 32,"NCKSEND");
+			hex_dump(readbuff, Empty_Msg_BufferLength, 32, "NCKRECV");
+			error_packs++;
+			if(readbuff[1] == MsgId)
+			{
+				//正确收发完成，并且副板无法执行主板下发的指令要求，需要上层处理
+				return -2;
+			}
+			else if(readbuff[1] == MsgId- 1)
+			{
+				printf("Can Resend the last pack.\n");
+				MsgIDCountDown();
+				goto Resend;
+			}
+			else
+			{
+				printf("Cann't Resend the last pack with MsgID<%d>.\n", readbuff[1]);
+			}
+		}
+	}
+	error_packs++;
+	hex_dump(readbuff, Empty_Msg_BufferLength, Empty_Msg_BufferLength, "ERR");
+	printf("Can not receive a correct pack, resend the last message.\n");
+	MsgIDCountDown();
+	goto Resend;
+}
+
 /* Public functions ----------------------------------------------------------*/
 int32_t bus_spi_init(uint32_t port, uint32_t freq, void *other)
 {
-	snprintf( device, DEVICE_NAME_LENTH, "/dev/spidev0.%d", port);
+	snprintf(device, DEVICE_NAME_LENTH, "/dev/spidev0.%d", port);
 	speed = freq;
 	memset(empty, 0, Empty_Msg_BufferLength);
   	return RET_OK;
 }
-/* int32_t bus_spi_init(int argc, char *argv[])
-{
-  parse_opts(argc, argv);
-  INIT_LIST_HEAD(&MessageQueueList);
-  return RET_OK;
-} */
 
 int32_t bus_spi_open(void)
 {
 	fd = open(device, O_RDWR);
-		if (fd < 0)
-			;//pabort("can't open device");
+	if (fd < 0)
+	{
+		pabort("can't open device");
+		return RET_ERROR;
+	}
+
+	/*
+	 * spi mode
+	 */
+	ret = ioctl(fd, SPI_IOC_WR_MODE32, &mode);
+	if (ret == -1)
+		pabort("can't set spi mode");
+ 
+	ret = ioctl(fd, SPI_IOC_RD_MODE32, &mode);
+	if (ret == -1)
+		pabort("can't get spi mode");
+	
+	/*
+	 * bits per word
+	 */
+	ret = ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits);
+	if (ret == -1)
+		pabort("can't set bits per word");
+ 
+	ret = ioctl(fd, SPI_IOC_RD_BITS_PER_WORD, &bits);
+	if (ret == -1)
+		pabort("can't get bits per word");
+ 
+	/*
+	 * max speed hz
+	 */
+	ret = ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
+	if (ret == -1)
+		pabort("can't set max speed hz");
+ 
+	ret = ioctl(fd, SPI_IOC_RD_MAX_SPEED_HZ, &speed);
+	if (ret == -1)
+		pabort("can't get max speed hz");
+	
+	printf("spi mode: 0x%x\n", mode);
+	printf("bits per word: %d\n", bits);
+	printf("max speed: %d Hz (%d KHz)\n", speed, speed/1000);
   	return RET_OK;
 }
 
-int32_t bus_spi_write(char *data, uint32_t len)
+//应该重写，仅进行收发操作
+int32_t bus_spi_write(const char *data, uint32_t len)
 {
-//<<<<<<< HEAD
+	time(&time_op); 
 	//判定包长
-	uint32_t sendpacklength = MAXPACKLENGTH;
-	uint16_t packages = (sizeof(&data) - 1) / MAXPACKLENGTH + 1;
-	if(packages <= 1)
-	{
-		sendpacklength = sizeof(&data);
+ 	uint16_t sendpacklength = MAX_PACKLENGTH;
+	uint16_t packages = (len - 1) / MAX_PACKLENGTH + 1;
+	uint16_t shortpacks = 0;
+	uint32_t sendoffset = 0;
+	int32_t RET;
+
+	APP_DEBUGF_HEX(SPI_DEBUG | APP_DBG_TRACE, data, len);
+	while(packages > 0){
+		//确认收发包有大于门限个可发送或者大于剩余可发送
+		RemainPack = MSG_SendQUERYPACK();
+		while(RemainPack < packages && RemainPack < PACK_GATE)
+		{
+			usleep(1);
+			RemainPack = MSG_SendQUERYPACK();
+		}
+		//确认收发包有大于门限个可发送或者大于剩余可发送
+
+		if(packages <= 1)
+		{
+			sendpacklength = len - sendoffset;
+			shortpacks = packages;
+		}
+		else
+		{
+			//如果包大于最大收发包存量，暂时先只发最大存量的包数量
+			if(packages > RemainPack)
+			{
+				shortpacks = RemainPack;
+			}
+			else
+			{
+				shortpacks = packages - 1;
+			}
+		}
+
+		//告诉副板我要发的数据包长度与包数量，长度不大于MAX_PACKLENGTH，包数量不大于MAX_PACK, 注意》》是否包长要算上包头，MSGID，包尾，算上就要 + 3
+		RET = MSG_SendLength(sendpacklength + 3, shortpacks);
+		if(RET < 0)
+		{
+			printf("Subboard cannot set data pack length\n");
+			return -1;
+		}
+
+		//将数据分包进行发送
+		for(int i = 0; i < shortpacks;i++)
+		{
+			memset(FullsizePack, 0, sendpacklength);
+			//判断余下的数据是否够组成一包，够就完整包大小拷贝，不够就仅拷贝有数据的部分
+			if(len - sendoffset > sendpacklength)
+			{
+				memcpy(FullsizePack, (data + sendoffset), sendpacklength);
+				sendoffset += sendpacklength;
+			}	
+			else
+			{
+				memcpy(FullsizePack, (data + sendoffset), len - sendoffset);
+				sendoffset += len - sendoffset;
+			}
+			RET = MSG_SendData(FullsizePack, sendpacklength);
+			if(RET < 0)
+			{
+				printf("Send data with unknown error, MsgId:%d, Message:\n<%s>\n", MsgId, ResevedMsg);
+				return -1;
+			}
+		}
+
+		//判断是否还有需要发送的包
+		packages = packages - shortpacks;
 	}
-	int32_t ret = bus_spi_sendLength(sendpacklength);
-	if(ret < 0)
+	//轮询到缓存空掉
+/*
+	RemainPack = MSG_SendQUERYPACK();
+	while(RemainPack < MAX_PACK)
 	{
-		//报错信息
+		usleep(1);
+		RemainPack = MSG_SendQUERYPACK();
 	}
-	char packmsg[sendpacklength + 2];
-	memset(packmsg, 0, sendpacklength);
-	uint32_t index = 0;
-	char *readbuff;
-	//从第一个包开始直到最后第二个包结束，进行发包
-	for(int i = 0;i < packages - 1;i++)
-	{
-		strncpy(packmsg, data + index, sendpacklength);
-		index += sendpacklength;
-		//加入CRC
-		packmsg[sendpacklength] = 0x0d;
-		packmsg[sendpacklength + 1] = 0x0a;
-		transfer(fd, packmsg, readbuff, sendpacklength);
-		//每发送指定数量的包以后进行询问，看还积了多少包没有发，再往下发指定数量-还剩的值，这个差值可以做一个门限，不需要一个个发
-	}
-	//处理发完剩下的一包，剩下一包理论上是小于等于指定包长度的
-	if(sizeof(&data) - 1 > index)
-	{
-		memset(packmsg, 0, sendpacklength + 2);
-		strncpy(packmsg, data + index, sizeof(&data) - 1 - index);
-		index = 0;
-		//加入CRC
-		packmsg[sendpacklength] = 0x0d;
-		packmsg[sendpacklength + 1] = 0x0a;
-		transfer(fd, packmsg, readbuff, sizeof(packmsg));
-	}
+	time(&time_ed);
+	*/
 	return 0;
 }
 
-int32_t bus_spi_sendLength(uint32_t len)
+int32_t bus_spi_read(char *buff, uint32_t len)
 {
-	//制作长度包下发
-	char data[8];
-
-
-	char *readbuff;
-	transfer(fd, data, readbuff, sizeof(data));
-	return 0;
-}
-
-/* int32_t bus_spi_write(struct Message_Type *msg, uint32_t len)
-{
-	list_add_tail(&msg->Node, &MessageQueueList);
-	char *readbuff;
-	transfer(fd, &msg->MessageInfo, readbuff, sizeof(&msg->MessageInfo));
-	//处理readbuff
-
-  	return 0;
-} */
-
-/* char* bus_spi_read(char * msg)
-{
-	char *readbf = msg;
-	char *longread = "";
-	char Emptystr[Empty_Msg_BufferLength];
-	memset(Emptystr,0,Empty_Msg_BufferLength);
-	//判断是否包含结束符
-	char *ret = strpbrk(readbf,(char *)ENDLINE);
-	strcat(longread, readbf);
-	if(strlen(ret)<3)//不包含完整结束符的话再读一次，并且把读到的消息放入longread队尾
+	resendcount = 0;
+Reget:
+	transfer(fd, empty, (uint8_t*)buff, len);
+	//是否有全一样的包，有就说明副板没准备好，再收一次
+	char temp = buff[0];
+	int resend = 1;
+	int i = 0;
+	while(i < len - 1)
 	{
-		transfer(fd, Emptystr, readbf, Empty_Msg_BufferLength);
-		ret = strpbrk(readbf,(char *)ENDLINE);
-		strcat(longread, readbf);
+		i++;
+		if(temp != buff[i])
+		{
+			resend = 0;
+			break;
+		}
 	}
-	return longread;
-//=======
- 	APP_DEBUGF(SPI_DEBUG | APP_DBG_TRACE, ("write data lenth: %d\r\n", len));
-  APP_DEBUGF_HEX(SPI_DEBUG | APP_DBG_TRACE, data, len);
-  return 0;
-//>>>>>>> a797dff93ddb1dedd994bd30ca253e4fbbf76f80
-} */
-
-void *bus_spi_read(char *buff, int len)
-{
-	transfer(fd, empty, buff, len);
-	return buff;
+	if(resend == 1)
+	{
+		resendcount++;
+		if(resendcount >= 100)
+		{
+			printf("Re-receive pack error, 100 times trying.\n");
+		}
+		else
+			goto Reget;
+	}	
+	//再收一次逻辑结束
+	if(crc_high_first((unsigned char*)buff, len - 1) == buff[len - 1])
+	{
+		bus_spi_RecvCRC = 1;
+	}
+	else
+	{
+		bus_spi_RecvCRC = 0;
+	}
+	return len;
 }
 
 int32_t bus_spi_ioctrl(BUS_CTRL_MSG *msg)
 {
-	
 	return RET_OK;
 }
 
@@ -392,12 +579,46 @@ int32_t bus_spi_close(void *param)
 }
 
 #define BUS_SPI   {BUS_ID_SPI,   \
+				  NULL,\
                   bus_spi_init,  \
                   bus_spi_open,  \
                   bus_spi_write, \
                   bus_spi_read,  \
                   bus_spi_ioctrl,\
                   bus_spi_close}
+
+#if 0
+
+static int SendPackCount = 0;
+
+double writedata_time()
+{
+	return difftime(time_ed, time_op);
+}
+
+
+//建立消息List，发送一个消息以后给这个消息列表加一个msgId
+
+//发送消息与收包消息同时进行，收到的消息包不是以255 255 0结尾就再发一个指定长度(EMTPY_MSG_LENGTH)的空包，直到收到包含255 255 0结尾的包作为接收结束
+//对于接收的消息进行
+
+int main(void)
+{
+	uint32_t MessageCount = 5120000;
+	char BufMsg[MessageCount];
+	memset(BufMsg, 0, MessageCount);
+	for(int i = 0;i < MessageCount;i++)
+	{
+		BufMsg[i] = i;
+	}
+	ret = bus_spi_init(0, 21000000, NULL);
+	ret = bus_spi_open();
+	ret = bus_spi_write(BufMsg, MessageCount);
+	printf("Sent:%d,Error:%d\n",Sent_packs, error_packs);
+	printf("Send Data use time:%fs\n", writedata_time());
+	return 0;
+}
+#endif
 
 
 //建立消息List，发送一个消息以后给这个消息列表加一个msgId

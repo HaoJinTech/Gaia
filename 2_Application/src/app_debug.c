@@ -16,6 +16,8 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
+#define LINE_LEN    32
+
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -24,31 +26,33 @@ void print_hex(const char* data, int data_len)
 {
     int i, j;
     unsigned int offset = 0;
-    int total_row = data_len / 16;
-    int left_data_len = data_len % 16;
+    int total_row = data_len / LINE_LEN;
+    int left_data_len = data_len % LINE_LEN;
 
     /* print data_len / 16 */
     for (j = 0; j < total_row; j++)
     {
         printf("# %08X   ", offset);
 
-        for (i = 0; i < 16; i++)
+        for (i = 0; i < LINE_LEN; i++)
         {
-            printf("%02X ", data[j*16+i]);
+            if(i%8 == 0) printf(" ");
+            printf("%02X ", data[j*LINE_LEN+i]);
         }
 
-        for (i = 0; i < 16; i++)
+        for (i = 0; i < LINE_LEN; i++)
         {
-            if ((data[j*16+i] < 0x20) || (data[j*16+i] > 0x7F))
+            if(i%8 == 0) printf(" ");
+            if ((data[j*LINE_LEN+i] < 0x20) || (data[j*LINE_LEN+i] > 0x7F))
             {
                 printf(".");
             }
             else
             {
-                printf("%c", data[j*16+i]);
+                printf("%c", data[j*LINE_LEN+i]);
             }
         }
-        offset += 16;
+        offset += LINE_LEN;
         printf("\n");
     }
 
@@ -58,21 +62,21 @@ void print_hex(const char* data, int data_len)
         printf("# %08X   ", offset);
         for (i = 0; i < left_data_len; i++)
         {
-            printf("%02X ", data[total_row*16+i]);
+            printf("%02X ", data[total_row*LINE_LEN+i]);
         }
-        for (i = 0; i < 16 - left_data_len; i++)
+        for (i = 0; i < LINE_LEN - left_data_len; i++)
         {
             printf("   ");
         }
         for (i = 0; i < left_data_len; i++)
         {
-            if ((data[total_row*16+i] < 0x20) || (data[total_row*16+i] > 0x7F))
+            if ((data[total_row*LINE_LEN+i] < 0x20) || (data[total_row*LINE_LEN+i] > 0x7F))
             {
                 printf(".");
             }
             else
             {
-                printf("%c", data[j*16+i]);
+                printf("%c", data[j*LINE_LEN+i]);
             }
         }
         printf("\n");

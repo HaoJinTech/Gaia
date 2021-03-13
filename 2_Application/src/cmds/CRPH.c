@@ -4,16 +4,16 @@
   * @author  
   * @version V0.1.0
   * @date    02-03-2021
-  * @brief   Basic att cmd
+  * @brief   
   *       
 	********** Copyright (C), 2014-2015,HJ technologies **************************
 	*/
-
+#include "platform.h"
 #include "cmd_prototype.h"
 #include "bll_calibration.h"
 #include "bll_pha.h"
 
-void cmd_crph(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun)
+LOCAL void cmd_crph(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun)
 {
     CMD_PARSE_OBJ *obj = NULL;
     uint32_t i = 0;

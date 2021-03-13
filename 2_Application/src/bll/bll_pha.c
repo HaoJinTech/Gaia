@@ -15,6 +15,7 @@
 #include "bll/bll_att.h"
 #include "bll/bll_pha.h"
 #include "bll/bll_calibration.h"
+#include "bll/protocol_env.h"
 
 #include <stdlib.h>
 /* Private typedef -----------------------------------------------------------*/
@@ -32,6 +33,11 @@ LOCAL BUS_DRIVER      *g_bus_obj = 0;
 int32_t get_pha_ch_max(void)
 {
     return g_ch_max;
+}
+
+int32_t get_pha_val_max(void)
+{
+    return g_val_max;
 }
 
 int32_t refresh_pha_val(uint32_t ch)
@@ -87,15 +93,15 @@ int32_t init_pha(json_object *pha_obj)
     int bus_id = 0;
 
     g_ch_max =      config_get_int(pha_obj, "PHA_MAX_CH", 8);
-    g_val_max =     config_get_int(pha_obj, "ATT_MAX_VAL", 110);
+    g_val_max =     config_get_int(pha_obj, "PHA_MAX_VAL", 360);
 
     protocol_id =   config_get_int(pha_obj, "ATT_PROTOCOL", PROTOCOL_ID_RR485);
     if(protocol_id > SUBBD_PROTOCOL_SIZE) protocol_id = PROTOCOL_ID_RR485;
-    g_protocol_obj = &protocols[protocol_id];
+    g_protocol_obj = get_protocol_obj(protocol_id);
 
     bus_id =        config_get_int(pha_obj, "ATT_BUS", BUS_ID_SPI);
     if(bus_id > BUS_DRIVER_NUM) bus_id = BUS_ID_SPI;
-    g_bus_obj =     &bus_drivers[bus_id];
+    g_bus_obj =     get_bus_obj(bus_id);
 
     g_pha_vals = malloc(sizeof(int32_t) * g_ch_max);
     

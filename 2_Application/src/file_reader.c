@@ -83,7 +83,7 @@ uint32_t csv_read_file(const char *filename, File_reader file_reader, void *dest
 	APP_DEBUGF(FILEREADER_DEBUG | APP_DBG_TRACE, ("open file: %s\r\n", full_path));
 	fd = open(full_path, O_RDONLY, 0);
 	if(fd<0){
-		APP_DEBUGF(FILEREADER_DEBUG | APP_DBG_LEVEL_WARNING | APP_DBG_TRACE,
+		APP_DEBUGF(FILEREADER_DEBUG | APP_DBG_LEVEL_WARNING ,
 		    ("open file failed.\r\n"));
 		return 0;
 	}
@@ -94,7 +94,7 @@ uint32_t csv_read_file(const char *filename, File_reader file_reader, void *dest
 	lseek(fd, 0, SEEK_SET);
 	rb = rb_malloc("conf_rb", FILE_BUFFER_SIZE*2, FILE_BUFFER_SIZE*2);
 	if(!rb){
-		APP_DEBUGF(FILEREADER_DEBUG | APP_DBG_LEVEL_SERIOUS | APP_DBG_TRACE,
+		APP_DEBUGF(FILEREADER_DEBUG | APP_DBG_LEVEL_SERIOUS ,
 		    ("rb malloc failed.\r\n"));
 	}
 	do{

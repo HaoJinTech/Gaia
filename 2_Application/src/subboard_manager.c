@@ -80,7 +80,7 @@ LOCAL void do_protocal(SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj, void *
 	APP_DEBUGF(SBBD_DEBUG | APP_DBG_TRACE , ("send to subboard (protocol:%d)(bus:%d).\r\n", 
         protocol_obj->protocol_id, bus_obj->bus_id));
 
-    protocol_obj->write(bus_obj, data);
+    protocol_obj->write(protocol_obj, bus_obj, data);
 }
 
 LOCAL int32_t subbd_send_data(SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj, void *data)
@@ -174,6 +174,21 @@ int32_t subbd_send_CCSV(char dset, SUBBD_PROTOCOL *protocol_obj,
     data->offset = ch_offset;
     data->value = value;
     data->ch_lenth = ch_lenth;
+
+    return subbd_send_data(protocol_obj, bus_obj, data);   
+}
+
+int32_t subbd_send_MCMMV(char dset, SUBBD_PROTOCOL *protocol_obj, 
+    BUS_DRIVER *bus_obj, int32_t *channel, int32_t *value, int32_t val_count, uint32_t ch_lenth)
+{
+    MCMMV *data = (MCMMV *)malloc(sizeof(MCMMV));
+    data->data_type = DATA_TYPE_MCMMV;
+    data->dest_type = dset;
+
+    data->channel = channel;
+    data->ch_lenth = ch_lenth;
+    data->value = value;
+    data->val_count = val_count;
 
     return subbd_send_data(protocol_obj, bus_obj, data);   
 }

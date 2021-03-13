@@ -8,11 +8,11 @@
   *       
 	********** Copyright (C), 2014-2015,HJ technologies **************************
 	*/
-
+#include "platform.h"
 #include "cmd_prototype.h"
 #include "bll_pha.h"
 
-void cmd_cpha(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun)
+LOCAL void cmd_cpha(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun)
 {
     CMD_PARSE_OBJ *obj = NULL;
     uint32_t i = 1;
@@ -21,7 +21,7 @@ void cmd_cpha(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun)
     // no paramiter so list all att values.
     send_buf_fun(dest_fd, "CPHA ");
     if(obj->num == 1){
-      for(i=0; i<get_att_ch_max(); i++){
+      for(i=0; i<get_pha_ch_max(); i++){
         send_buf_fun(dest_fd, "%d %d;", i+1, get_pha(i));
       }
     // more than 3 word so set att.
@@ -37,6 +37,10 @@ void cmd_cpha(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun)
         i++;
         if(i >= obj->num) break;
         val = cmd_obj_get_int(obj, i);
+        if(val>get_pha_val_max()){
+          val = get_pha_val_max();
+        }
+
         i++;
         set_pha(ch, val);
         send_buf_fun(dest_fd, "%d %d;", ch+1, get_pha(ch));
