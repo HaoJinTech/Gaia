@@ -60,7 +60,7 @@ static uint8_t FullsizePack[MAX_PACKLENGTH + 6];
 static uint8_t ResevedMsg[MAX_PACKLENGTH + 6];
 static int ret = 0;
 static uint8_t bus_spi_RecvCRC = 0;
-static int fd;
+static int spi_fd;
 static uint8_t resendcount = 0;
 /* Private function prototypes -----------------------------------------------*/
 static uint8_t GetMsgID()
@@ -155,15 +155,15 @@ static int32_t io_spi_write(uint8_t *data, uint32_t len)
 	packmsg[len + 3] = crccode;
 	memset(ResevedMsg, 0, len + 4);
 	memcpy(ResevedMsg, packmsg, len + 4);
-	transfer(fd, packmsg, readmsg, len + 4);
+	transfer(spi_fd, packmsg, readmsg, len + 4);
 	return 0;
 }
 
-static void io_spi_read(uint8_t *buff, int len)
+static int32_t io_spi_read(uint8_t *buff, int len)
 {
 	resendcount =0;
 Reget:
-	transfer(fd, empty, buff, len);
+	transfer(spi_fd, empty, buff, len);
 
 	//是否有全一样的包，有就说明副板没准备好，再收一次
 	char temp = buff[0];
@@ -184,6 +184,8 @@ Reget:
 		if(resendcount >= 100)
 		{
 			printf("Re-receive pack error, 100 times trying.\n");
+			//pabort("Re-receive pack error, 100 times trying.\n")
+			return RET_ERROR;
 		}
 		else
 			goto Reget;
@@ -198,6 +200,7 @@ Reget:
 	{
 		bus_spi_RecvCRC = 0;
 	}
+	return RET_OK;
 }
 
 //应该交由上层管理控制
@@ -209,9 +212,10 @@ static int32_t MSG_SendData(uint8_t* packdata,uint32_t len)
 Resend:
 	io_spi_write(packdata, len);
 	//接收指令的回复
-	io_spi_read(readbuff, Empty_Msg_BufferLength);
+	ret = io_spi_read(readbuff, Empty_Msg_BufferLength);
 	Sent_packs++;
-
+	if(ret < 0)
+		return RET_ERROR;
 	if(bus_spi_RecvCRC == 0)
 	{
 		hex_dump(ResevedMsg, len + 4, 32,"CRCSEND");
@@ -274,8 +278,10 @@ static int32_t MSG_SendLength(uint32_t len, uint32_t pack)
 Resend:
 	io_spi_write(data, sizeof(data));
 	//接收指令的回复
-	io_spi_read(readbuff, Empty_Msg_BufferLength);
+	ret = io_spi_read(readbuff, Empty_Msg_BufferLength);
 	Sent_packs++;
+	if(ret < 0)
+		return RET_ERROR;
 
 	if(bus_spi_RecvCRC == 0)
 	{
@@ -335,8 +341,10 @@ Resend:
 	//发送指令信息	
 	io_spi_write(data, sizeof(data));
 	//接收指令的回复
-	io_spi_read(readbuff, Empty_Msg_BufferLength);
+	ret = io_spi_read(readbuff, Empty_Msg_BufferLength);
 	Sent_packs++;
+	if(ret < 0)
+		return RET_ERROR;
 	if(bus_spi_RecvCRC == 0)
 	{
 		hex_dump(ResevedMsg, sizeof(data) + 4, 32,"CRCSEND");
@@ -393,8 +401,8 @@ int32_t bus_spi_init(uint32_t port, uint32_t freq, void *other)
 
 int32_t bus_spi_open(void)
 {
-	fd = open(device, O_RDWR);
-	if (fd < 0)
+	spi_fd = open(device, O_RDWR);
+	if (spi_fd < 0)
 	{
 		pabort("can't open device");
 		return RET_ERROR;
@@ -403,33 +411,33 @@ int32_t bus_spi_open(void)
 	/*
 	 * spi mode
 	 */
-	ret = ioctl(fd, SPI_IOC_WR_MODE32, &mode);
+	ret = ioctl(spi_fd, SPI_IOC_WR_MODE32, &mode);
 	if (ret == -1)
 		pabort("can't set spi mode");
  
-	ret = ioctl(fd, SPI_IOC_RD_MODE32, &mode);
+	ret = ioctl(spi_fd, SPI_IOC_RD_MODE32, &mode);
 	if (ret == -1)
 		pabort("can't get spi mode");
 	
 	/*
 	 * bits per word
 	 */
-	ret = ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits);
+	ret = ioctl(spi_fd, SPI_IOC_WR_BITS_PER_WORD, &bits);
 	if (ret == -1)
 		pabort("can't set bits per word");
  
-	ret = ioctl(fd, SPI_IOC_RD_BITS_PER_WORD, &bits);
+	ret = ioctl(spi_fd, SPI_IOC_RD_BITS_PER_WORD, &bits);
 	if (ret == -1)
 		pabort("can't get bits per word");
  
 	/*
 	 * max speed hz
 	 */
-	ret = ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
+	ret = ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
 	if (ret == -1)
 		pabort("can't set max speed hz");
  
-	ret = ioctl(fd, SPI_IOC_RD_MAX_SPEED_HZ, &speed);
+	ret = ioctl(spi_fd, SPI_IOC_RD_MAX_SPEED_HZ, &speed);
 	if (ret == -1)
 		pabort("can't get max speed hz");
 	
@@ -454,6 +462,8 @@ int32_t bus_spi_write(const char *data, uint32_t len)
 	while(packages > 0){
 		//确认收发包有大于门限个可发送或者大于剩余可发送
 		RemainPack = MSG_SendQUERYPACK();
+		if(RemainPack<0)
+			return RET_ERROR;
 		while(RemainPack < packages && RemainPack < PACK_GATE)
 		{
 			usleep(1);
@@ -484,7 +494,7 @@ int32_t bus_spi_write(const char *data, uint32_t len)
 		if(RET < 0)
 		{
 			printf("Subboard cannot set data pack length\n");
-			return -1;
+			return RET_ERROR;
 		}
 
 		//将数据分包进行发送
@@ -506,7 +516,7 @@ int32_t bus_spi_write(const char *data, uint32_t len)
 			if(RET < 0)
 			{
 				printf("Send data with unknown error, MsgId:%d, Message:\n<%s>\n", MsgId, ResevedMsg);
-				return -1;
+				return RET_ERROR;
 			}
 		}
 
@@ -530,7 +540,7 @@ int32_t bus_spi_read(char *buff, uint32_t len)
 {
 	resendcount = 0;
 Reget:
-	transfer(fd, empty, (uint8_t*)buff, len);
+	transfer(spi_fd, empty, (uint8_t*)buff, len);
 	//是否有全一样的包，有就说明副板没准备好，再收一次
 	char temp = buff[0];
 	int resend = 1;
@@ -573,7 +583,7 @@ int32_t bus_spi_ioctrl(BUS_CTRL_MSG *msg)
 
 int32_t bus_spi_close(void *param)
 {
-	close(fd);
+	close(spi_fd);
 	return RET_OK;
 }
 

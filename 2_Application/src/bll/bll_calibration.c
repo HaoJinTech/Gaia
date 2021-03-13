@@ -27,22 +27,26 @@ struct Cal_info{
 	const char *cal_id;
 
 	// att effect pha
+	uint8_t	 s_att_effect;					// is pha effect by att
 	uint16_t point_num;
 	int16_t *att_point;
 	int16_t *pha_offset;
 
 	// pha effect att
+	uint8_t	 s_pha_effect; 					// is att effect by pha
 	uint16_t point_num_att;
 	int16_t *pha_point;
 	int16_t *att_offset;
 
 	// pha value remap
+	uint8_t s_pha_by_table_enable;			// is effect by table calibration
 	int16_t pha_map_item_count;
 	int16_t *pha_map_cal;
 	
 	int16_t cal_ch_max;
 	uint32_t *line_start;
-	
+
+	uint8_t	s_stretch_enable;				// is effect by stretch
 	int16_t *stretch;
 
 	struct list_head  		list;
@@ -60,10 +64,7 @@ LOCAL struct Cal_info 	cal_info_root;
 LOCAL uint32_t 			g_cal_info_num;
 LOCAL uint8_t 			*scal_id = NULL;					// the calibration object index of every channel
 LOCAL int16_t			*scal_offset = NULL;
-LOCAL uint8_t			s_att_effect = 0;					// is pha effect by att
-LOCAL uint8_t			s_pha_effect = 0; 					// is att effect by pha
-LOCAL uint8_t			s_pha_by_table_enable = 0;			// is effect by table calibration
-LOCAL uint8_t			s_stretch_enable = 0;				// is effect by stretch
+
 LOCAL uint32_t 			stretch_point =0;
 LOCAL const char		*cali_pt_filename = 0;
 LOCAL const char 		*relative_path = 0;
@@ -459,7 +460,7 @@ int32_t calibration_proc(uint32_t ch, int32_t att_val, int32_t pha_val, int32_t 
 	val += scal_offset[ch];
 	
 	// step2:  calibrate the pha based on the att
-	if(s_att_effect && cal_info->point_num && cal_info->att_point){
+	if(cal_info->s_att_effect && cal_info->point_num && cal_info->att_point){
 		for(j=1; j<cal_info->point_num; j++){
 			if(cal_info->att_point[j-1]<= att_val && cal_info->att_point[j]> att_val){
 				break;
@@ -473,7 +474,7 @@ int32_t calibration_proc(uint32_t ch, int32_t att_val, int32_t pha_val, int32_t 
 	val = calc_remainder(val, cal_info->pha_map_item_count);
 	
 	// step4:  calibrate the att based on the pha
-	if(s_pha_effect && cal_info->point_num_att && cal_info->pha_point){
+	if(cal_info->s_pha_effect && cal_info->point_num_att && cal_info->pha_point){
 		for(j=1; j<cal_info->point_num_att; j++){
 			if(cal_info->pha_point[j-1]<= val && cal_info->pha_point[j]> val){
 				break;
@@ -489,7 +490,7 @@ int32_t calibration_proc(uint32_t ch, int32_t att_val, int32_t pha_val, int32_t 
 	val = cal_info->pha_map_cal[val];
 
 	// step6:  stretch the pha value based on the stretch point
-	if(s_stretch_enable && stretch_point && cal_info->stretch){
+	if(cal_info->s_stretch_enable && stretch_point && cal_info->stretch){
 		uint8_t map_min_i = getMapPosition(cal_info, val);
 		int16_t map_min = cal_info->stretch[map_min_i];
 		int16_t map_max = cal_info->stretch[map_min_i+1];
@@ -597,45 +598,46 @@ int32_t init_calibration(json_object *cali_obj)
 		memset(cal_info, 0, sizeof(struct Cal_info));
 		array_obj = config_get_array_obj(cali_obj, "CALI_OBJS", i);
 		// load 2G6_inf.csv 
-		s_att_effect = config_get_bool(array_obj, "ADJ_PHA_BY_ATT", 0);
-		if(s_att_effect){
+		
+		cal_info->s_att_effect = config_get_bool(array_obj, "ADJ_PHA_BY_ATT", 0);
+		if(cal_info->s_att_effect){
 			filename = config_get_string(array_obj, "ADJ_PHA_BY_ATT_FILE", "");
 			strncpy(full_path, relative_path, FILE_PATH_LEN);
 			strncat(full_path, filename, FILE_PATH_LEN - strlen(relative_path));
 			APP_DEBUGF(CALI_DEBUG | APP_DBG_TRACE, ("load file:(%s).\r\n", full_path));
 			line = csv_read_file(full_path, (File_reader)get_inf_cal_data, cal_info);
-			if(0 == line) s_att_effect = 0;
+			if(0 == line) cal_info->s_att_effect = 0;
 		}
 		// load 2G6_attinf.csv 
-		s_pha_effect = config_get_bool(array_obj, "ADJ_ATT_BY_PHA", 0);
-		if(s_pha_effect){
+		cal_info->s_pha_effect = config_get_bool(array_obj, "ADJ_ATT_BY_PHA", 0);
+		if(cal_info->s_pha_effect){
 			filename = config_get_string(array_obj, "ADJ_ATT_BY_PHA_FILE", "");
 			strncpy(full_path, relative_path, FILE_PATH_LEN);
 			strncat(full_path, filename, FILE_PATH_LEN - strlen(relative_path));
 			APP_DEBUGF(CALI_DEBUG | APP_DBG_TRACE, ("load file:(%s).\r\n", full_path));
 			line = csv_read_file(full_path, (File_reader)get_attinf_cal_data, cal_info);
-			if(0 == line) s_pha_effect = 0;
+			if(0 == line) cal_info->s_pha_effect = 0;
 		}
 		// load 2G6_pha.csv 
-		s_pha_by_table_enable = config_get_bool(array_obj, "ADJ_PHA_BY_TABLE", 0);
-		if(s_pha_by_table_enable){
+		cal_info->s_pha_by_table_enable = config_get_bool(array_obj, "ADJ_PHA_BY_TABLE", 0);
+		if(cal_info->s_pha_by_table_enable){
 			filename = config_get_string(array_obj, "ADJ_PHA_BY_TABLE_FILE", "");
 			strncpy(full_path, relative_path, FILE_PATH_LEN);
 			strncat(full_path, filename, FILE_PATH_LEN - strlen(relative_path));
 			APP_DEBUGF(CALI_DEBUG | APP_DBG_TRACE, ("load file:(%s).\r\n", full_path));
 			line = csv_read_file(full_path, (File_reader)get_pha_cal_data, cal_info);
-			if(0 == line) s_pha_by_table_enable = 0;
+			if(0 == line) cal_info->s_pha_by_table_enable = 0;
 		}
 		// load 2G6_stretch.csv
-		s_stretch_enable = config_get_bool(array_obj, "ADJ_PHA_BY_STRETCH", 0);
-		if(s_stretch_enable){
+		cal_info->s_stretch_enable = config_get_bool(array_obj, "ADJ_PHA_BY_STRETCH", 0);
+		if(cal_info->s_stretch_enable){
 			stretch_point = config_get_int(array_obj, "ADJ_PHA_BY_STRETCH_POINT", 0);
 			filename = config_get_string(array_obj, "ADJ_PHA_BY_STRETCH_FILE", "");
 			strncpy(full_path, relative_path, FILE_PATH_LEN);
 			strncat(full_path, filename, FILE_PATH_LEN - strlen(relative_path));
 			APP_DEBUGF(CALI_DEBUG | APP_DBG_TRACE, ("load file:(%s).\r\n", full_path));
 			line = csv_read_file(full_path, (File_reader)get_pha_stretch_data, cal_info);
-			if(0 == line) s_stretch_enable = 0;
+			if(0 == line) cal_info->s_stretch_enable = 0;
 		}
 
 		// set calibration point name

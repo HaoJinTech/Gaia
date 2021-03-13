@@ -95,7 +95,10 @@ used for load all the channels with both pha and att.
 -----------------------------------------------------
 | N|     ATT     |      PHA      |
 | 0 111 1111 1111 1111 1111 1111 |
-|   VALH    |  VALM   |   VALL   | */
+|   VALH    |  VALM   |   VALL   | 
+ATT = ((VALH & 0x8f) << 4) | ((VALH & 0xf0) >> 4);
+PHA = ((VALM & 0xf) << 8) | VALL
+*/
 #define CMD_TYPE_ATT_PHA_LOAD_EX  230
 
 /******************************************************************************/

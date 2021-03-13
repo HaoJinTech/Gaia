@@ -71,8 +71,7 @@ int32_t set_pha(uint32_t ch, int32_t val)
         int32_t att_out=0;
         att = get_att(ch);
         val = calibration_proc(ch, att, val, &att_out);
-        if(att != att_out)
-            subbd_send_SCSV(DEST_ATT, g_protocol_obj, g_bus_obj, ch, att_out);
+        subbd_send_SCSV(DEST_ATT, g_protocol_obj, g_bus_obj, ch, att_out);
     }
 
     subbd_send_SCSV(DEST_PHA, g_protocol_obj, g_bus_obj, ch, val);
