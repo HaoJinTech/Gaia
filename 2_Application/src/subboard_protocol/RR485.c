@@ -207,6 +207,8 @@ LOCAL char *make_new_ex_buf(long dest_type, int32_t *ch, int32_t *val, uint32_t 
   buf_i++;
   buf[buf_i] = 255;
   buf_i++;
+
+  return buf;
 }
 
 LOCAL int32_t radio_rack_485_init(SUBBD_PROTOCOL *devs, void *param)
