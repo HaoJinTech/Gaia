@@ -10,6 +10,7 @@
         "typeinfo": "c",
         "bll_ch_remap.h": "c",
         "protocol_env.h": "c",
-        "bll_calibration.h": "c"
+        "bll_calibration.h": "c",
+        "time.h": "c"
     }
 }

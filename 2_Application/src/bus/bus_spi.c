@@ -28,6 +28,7 @@
 #define SPI_DEBUG  APP_DBG_ON
 /* Private define ------------------------------------------------------------*/
 #define ARRAY_SIZE(a) 				(sizeof(a) / sizeof((a)[0]))
+
 #define Empty_Msg_BufferLength 		9
 #define MSG_HEAD 					0x02
 #define MSG_END 					0x04
