@@ -84,7 +84,11 @@ int tcp_server_init(void) {
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
     server_addr.sin_addr.s_addr = INADDR_ANY;
-
+    int on =1;
+    if(setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(int)) < 0) {        
+        perror("setsockopt");
+        return 0;
+    }
     if (bind(sock_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
         perror("bind");
         return 0;
