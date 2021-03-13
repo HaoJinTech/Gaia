@@ -642,7 +642,7 @@ LOCAL struct Case_item *upload_case(char *name)
 			case_item->ch_max = cha_max_temp;
 		}
 		if(c_ch){
-			case_item->cha_array[iter] = atoi(c_ch);
+			case_item->cha_array[iter] = atoi(c_ch)-1;
 			iter++;
 		}else{ 
 			case_item->ch_max = iter;

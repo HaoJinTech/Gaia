@@ -6,7 +6,8 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/lib/inc",
                 "${workspaceFolder}/inc",
-                "${workspaceFolder}/src/cmds"
+                "${workspaceFolder}/src/cmds",
+                "/usr/include/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc-8",

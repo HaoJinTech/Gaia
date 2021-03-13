@@ -158,12 +158,13 @@ LOCAL char *make_new_buf(long dest_type, int32_t *ch, int32_t *val, uint32_t ch_
   uint32_t buf_i=1;
   uint32_t i =0;
   uint32_t j =0;
+  int32_t ch_temp = 0;
   for(i=0; i<ch_num; i++){
-    ch[i]++; // start at 1, not 0
+    ch_temp = ch[i]+1; // start at 1, not 0
     // channel;
-    buf[buf_i] = ((ch[i] >> 7) & 0x7f);
+    buf[buf_i] = ((ch_temp >> 7) & 0x7f);
     buf_i++;
-    buf[buf_i] = (ch[i] & 0x7f);
+    buf[buf_i] = (ch_temp & 0x7f);
     buf_i++;
     // value;
     for(j=0; j<val_num; j++){
