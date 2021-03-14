@@ -51,12 +51,11 @@ static uint32_t speed = 21000000;
 static uint16_t delay;
 static uint8_t MsgId = 0;
 static uint8_t empty[Empty_Msg_BufferLength];
-static time_t time_op;//, time_ed;
+//static time_t time_op, time_ed;
 //test
 static int32_t Sent_packs = 0;
 static int32_t error_packs = 0;
 static int32_t tryed_resend = 0;
-static int CRC_Warning = 0;
 static int RemainPack = 0;
 static uint8_t FullsizePack[MAX_PACKLENGTH + 6];
 //ACK包格式 0X02开头 0x04结尾
