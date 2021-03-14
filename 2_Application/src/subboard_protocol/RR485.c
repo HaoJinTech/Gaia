@@ -106,7 +106,7 @@ PHA = ((VALM & 0xf) << 8) | VALL
 #define RF_DEV_OPEN_RETRY_TIME  3
 
 /* Private define ------------------------------------------------------------*/
-#define RR485_DEBUG   APP_DBG_ON
+#define RR485_DEBUG   APP_DBG_OFF
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
