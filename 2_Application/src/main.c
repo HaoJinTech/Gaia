@@ -28,9 +28,9 @@ int main(void)
 {
     int32_t ret = RET_OK;
     config_init();
+    ret = init_rfboard_manager();
     ret = init_bll_manager();
     ret = init_cmd_manager();
-    ret = init_rfboard_manager();
     ret = tcp_server_init();
 
     return ret;

@@ -688,5 +688,6 @@ int32_t init_calibration(json_object *cali_obj)
 	csv_read_file(full_path, (File_reader)get_freq_data, NULL);
 	save_cscd_file();
 
+
     return RET_OK;
 }

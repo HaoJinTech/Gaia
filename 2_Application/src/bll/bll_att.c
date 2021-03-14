@@ -68,6 +68,7 @@ int32_t get_att_ch_max(void)
 int32_t set_att(uint32_t ch, int32_t val)
 {
     int32_t att;
+    int32_t remap_ch;
 
     if(ch >= g_ch_max || val > g_val_max) 
         return RET_ERROR;
@@ -76,15 +77,17 @@ int32_t set_att(uint32_t ch, int32_t val)
 
     // remap the channel
     if(g_remap_enable){
-        ch = ch_remap(g_remap_index, ch);
+        remap_ch = ch_remap(g_remap_index, ch);
+    }else{
+        remap_ch = ch;
     }
    
     if(calibration_is_enabled()){
         int32_t pha;
         pha = calibration_proc(ch, att, get_pha(ch), &att);
-        subbd_send_SCSV(DEST_PHA, g_protocol_obj, g_bus_obj, ch, pha);
+        subbd_send_SCSV(DEST_PHA, g_protocol_obj, g_bus_obj, remap_ch, pha);
     }
-    subbd_send_SCSV(DEST_ATT, g_protocol_obj, g_bus_obj, ch, att);
+    subbd_send_SCSV(DEST_ATT, g_protocol_obj, g_bus_obj, remap_ch, att);
 
     return RET_OK;
 }

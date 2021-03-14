@@ -16,6 +16,7 @@
 #include "bll/bll_pha.h"
 #include "bll/bll_calibration.h"
 #include "bll/protocol_env.h"
+#include "bll/bll_ch_remap.h"
 
 #include <stdlib.h>
 /* Private typedef -----------------------------------------------------------*/
@@ -25,6 +26,8 @@
 LOCAL uint32_t g_ch_max = 0;
 LOCAL uint32_t g_val_max = 0;
 LOCAL int32_t *g_pha_vals = 0;
+LOCAL int     g_remap_enable = 0;
+LOCAL int32_t g_remap_index = 0;
 
 LOCAL SUBBD_PROTOCOL  *g_protocol_obj = 0;
 LOCAL BUS_DRIVER      *g_bus_obj = 0;
@@ -60,21 +63,38 @@ int32_t refresh_pha_val(uint32_t ch)
     return RET_OK;
 }
 
+int32_t pha_refresh_all(void)
+{
+    uint32_t i =0;
+    for(i=0; i<g_ch_max; i++){
+        refresh_pha_val(i);
+    }
+    return RET_OK;
+}
+
 int32_t set_pha(uint32_t ch, int32_t val)
 {
+    int32_t remap_ch =0;
     if(ch >= g_ch_max )
         return RET_ERROR;
 
     g_pha_vals[ch] = val;
+
+    // remap the channel
+    if(g_remap_enable){
+        remap_ch = ch_remap(g_remap_index, ch);
+    }else{
+        remap_ch = ch;
+    }
     if(calibration_is_enabled()){
         int32_t att=0;
         int32_t att_out=0;
         att = get_att(ch);
         val = calibration_proc(ch, att, val, &att_out);
-        subbd_send_SCSV(DEST_ATT, g_protocol_obj, g_bus_obj, ch, att_out);
+        subbd_send_SCSV(DEST_ATT, g_protocol_obj, g_bus_obj, remap_ch, att_out);
     }
 
-    subbd_send_SCSV(DEST_PHA, g_protocol_obj, g_bus_obj, ch, val);
+    subbd_send_SCSV(DEST_PHA, g_protocol_obj, g_bus_obj, remap_ch, val);
     return RET_OK;
 }
 
@@ -93,6 +113,8 @@ int32_t init_pha(json_object *pha_obj)
 
     g_ch_max =      config_get_int(pha_obj, "PHA_MAX_CH", 8);
     g_val_max =     config_get_int(pha_obj, "PHA_MAX_VAL", 360);
+    g_remap_enable =config_get_bool(pha_obj, "ATT_REMAP_ENABLE", 0);
+    g_remap_index = config_get_int(pha_obj, "ATT_REMAP_INDEX", 0);
 
     protocol_id =   config_get_int(pha_obj, "ATT_PROTOCOL", PROTOCOL_ID_RR485);
     if(protocol_id > SUBBD_PROTOCOL_SIZE) protocol_id = PROTOCOL_ID_RR485;

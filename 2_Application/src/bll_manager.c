@@ -54,6 +54,7 @@ LOCAL int32_t bll_assembly(void)
             bll_objs[i].init_fun(obj);            
         }
     }
+	pha_refresh_all();
 
     return RET_OK;
 }
