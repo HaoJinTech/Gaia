@@ -219,7 +219,7 @@ LOCAL char *make_new_ex_buf(long dest_type, int32_t *val, uint32_t ch_num, uint3
   buf_i++;
   buf[buf_i] = 255;
   buf_i++;
-
+  *out_len = buf_i;
   return buf;
 }
 

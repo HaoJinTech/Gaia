@@ -474,6 +474,9 @@ int32_t calibration_proc(uint32_t ch, int32_t att_val, int32_t pha_val, int32_t 
 	val = calc_remainder(val, cal_info->pha_map_item_count);
 	
 	// step4:  calibrate the att based on the pha
+	if(o_attval){
+		*o_attval = att_val;
+	}
 	if(cal_info->s_pha_effect && cal_info->point_num_att && cal_info->pha_point){
 		for(j=1; j<cal_info->point_num_att; j++){
 			if(cal_info->pha_point[j-1]<= val && cal_info->pha_point[j]> val){
