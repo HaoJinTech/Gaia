@@ -37,7 +37,7 @@
 #define MSG_QUERYPACK				0x02
 #define RECV_ACK					0x06
 #define RECV_NCK					0x15
-#define MAX_PACKLENGTH 				1021
+#define MAX_PACKLENGTH 				253
 #define MAX_PACK					20
 #define PACK_GATE					10
 #define MaxRetry					20
@@ -217,7 +217,7 @@ Resend:
 	}
 	io_spi_write(sendmsg, len);
 	//接收指令的回复
-	usleep(20);
+	//usleep(20);
 	ret = io_spi_read(readmsg, Empty_Msg_BufferLength);
 	Sent_packs++;
 	if(ret < 0)
@@ -416,7 +416,7 @@ int32_t bus_spi_write(char *data, uint32_t len)
 		}
 		while(RemainPack < packages && RemainPack < PACK_GATE)
 		{
-			usleep(1);
+			usleep(10);
 			RemainPack = MSG_SendQUERYPACK();
 			if(RemainPack < 0)
 			{
