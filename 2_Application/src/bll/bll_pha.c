@@ -113,14 +113,14 @@ int32_t init_pha(json_object *pha_obj)
 
     g_ch_max =      config_get_int(pha_obj, "PHA_MAX_CH", 8);
     g_val_max =     config_get_int(pha_obj, "PHA_MAX_VAL", 360);
-    g_remap_enable =config_get_bool(pha_obj, "ATT_REMAP_ENABLE", 0);
-    g_remap_index = config_get_int(pha_obj, "ATT_REMAP_INDEX", 0);
+    g_remap_enable =config_get_bool(pha_obj, "PHA_REMAP_ENABLE", 0);
+    g_remap_index = config_get_int(pha_obj, "PHA_REMAP_INDEX", 0);
 
-    protocol_id =   config_get_int(pha_obj, "ATT_PROTOCOL", PROTOCOL_ID_RR485);
+    protocol_id =   config_get_int(pha_obj, "PHA_PROTOCOL", PROTOCOL_ID_RR485);
     if(protocol_id > SUBBD_PROTOCOL_SIZE) protocol_id = PROTOCOL_ID_RR485;
     g_protocol_obj = get_protocol_obj(protocol_id);
 
-    bus_id =        config_get_int(pha_obj, "ATT_BUS", BUS_ID_SPI);
+    bus_id =        config_get_int(pha_obj, "PHA_BUS", BUS_ID_SPI);
     if(bus_id > BUS_DRIVER_NUM) bus_id = BUS_ID_SPI;
     g_bus_obj =     get_bus_obj(bus_id);
 
