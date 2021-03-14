@@ -546,7 +546,7 @@ LOCAL int8_t upload_to_subboard_ex(struct Case_item *case_item)
 		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE, ("upload line:%d\r\n",case_item->line_max));
 		/* send data to sub board after */
 		subbd_send_CCMMV(DEST_UPLD_ATT_PHA_EX, g_protocol_obj, g_bus_obj, 0, temp_att_pha, 2, case_item->ch_max);
-
+		usleep(5000);
 		case_item->line_max += 1;
 	}
 
