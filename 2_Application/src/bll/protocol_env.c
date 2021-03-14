@@ -34,7 +34,7 @@ LOCAL int32_t init_protocol_env(void)
     g_bus_obj =      &bus_drivers[bus_id];
     g_init_bus_obj = &bus_drivers[bus_init];
 
-    g_bus_obj->init(0, 15000000, NULL);
+    g_bus_obj->init(0, 21000000, NULL);
     g_bus_obj->sem_rx_ready = 0;
     g_bus_obj->open();
 
