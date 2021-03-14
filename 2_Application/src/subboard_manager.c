@@ -33,7 +33,7 @@ typedef struct subbd_msg{
 } SUBBD_MSG;
 
 /* Private define ------------------------------------------------------------*/
-#define SBBD_DEBUG       APP_DBG_ON
+#define SBBD_DEBUG       APP_DBG_OFF
 
 #define SBBD_MSG_TYPE        0x0020
 

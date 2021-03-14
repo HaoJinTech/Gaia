@@ -241,7 +241,14 @@ Resend:
 			{
 				printf("CRC Error, but get correct return\n");
 			}
-			return RET_OK;
+			if(MSG_QUERYPACK == MSGRETURN)
+			{
+				return readmsg[3];
+			}
+			else
+			{
+				return RET_OK;
+			}
 		}
 		else if(readmsg[2] == RECV_NCK)
 		{
@@ -249,8 +256,11 @@ Resend:
 			hex_dump(readmsg, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "NCKRECV");
 			error_packs++;
 			if(readmsg[1] == MsgId)
-			{
-				return RET_ERROR;
+			{				
+				printf("Subboard cannot deal with the pack, resend a new pack.\n");
+				tryed_resend++;
+				usleep(10000);
+				goto Resend;
 			}
 			else if(readmsg[1] == MsgId - 1)
 			{
@@ -261,8 +271,11 @@ Resend:
 			}
 			else
 			{
-				printf("Cann't Resend the last pack with MsgID<%d>.\n", readmsg[1]);
-				return RET_ERROR;
+				printf("MsgId is irelevant, but still resend the last pack.\n");
+				usleep(10000);
+				MsgIDCountDown();
+				tryed_resend++;
+				goto Resend;
 			}
 		}
 		else
