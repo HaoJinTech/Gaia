@@ -64,7 +64,7 @@ static uint8_t ResevedMsg[MAX_PACKLENGTH + 6];
 static int ret = 0;
 static uint8_t bus_spi_RecvCRC = 0;
 static int spi_fd;
-static uint8_t resendcount = 0;
+static uint8_t re_readcount = 0;
 /* Private function prototypes -----------------------------------------------*/
 static uint8_t GetMsgID()
 {
@@ -162,9 +162,28 @@ static int32_t io_spi_write(uint8_t *data, uint32_t len)
 	return 0;
 }
 
+static int32_t io_spi_write(uint8_t *data, uint32_t len)
+{
+	uint8_t crccode;
+	uint8_t packmsg[len + 4];
+	uint8_t readmsg[len + 4];
+	memset(packmsg, 0, len + 4);
+	memset(readmsg, 0, len + 4);
+	packmsg[0] = MSG_HEAD;
+	packmsg[1]= GetMsgID();
+	memcpy(packmsg + 2, data, len);
+	packmsg[len + 2] = MSG_END;
+	crccode = crc_high_first(packmsg, len + 3);
+	packmsg[len + 3] = crccode;
+	memset(ResevedMsg, 0, len + 4);
+	memcpy(ResevedMsg, packmsg, len + 4);
+	transfer(spi_fd, packmsg, readmsg, len + 4);
+	return 0;
+}
+
 static int32_t io_spi_read(uint8_t *buff, int len)
 {
-	resendcount =0;
+	re_readcount =0;
 Reget:
 	transfer(spi_fd, empty, buff, len);
 
@@ -184,10 +203,10 @@ Reget:
 	if(resend == 1)
 	{
 		usleep(10000);
-		resendcount++;
-		if(resendcount >= 100)
+		re_readcount++;
+		if(re_readcount >= 20)
 		{
-			printf("Re-receive pack error, 100 times trying.\n");
+			printf("Re-receive pack error, 20 times trying.\n");
 			//pabort("Re-receive pack error, 100 times trying.\n")
 			return RET_ERROR;
 		}
@@ -207,80 +226,98 @@ Reget:
 	return RET_OK;
 }
 
-//应该交由上层管理控制
-static int32_t MSG_SendData(uint8_t* packdata,uint32_t len)
+static int32_t MSG_DealWith(uint8_t *sendmsg, uint32_t len, uint8_t *readmsg, const uint8_t MSGRETURN)
 {
 	tryed_resend = 0;
-	uint8_t readbuff[Empty_Msg_BufferLength];
-	memset(readbuff, 0, Empty_Msg_BufferLength);
 	//发送指令信息	
 Resend:
-	io_spi_write(packdata, len);
+	if(tryed_resend >= MaxRetry)
+	{	
+		tryed_resend = 0;
+		return RET_ERROR;
+	}
+	io_spi_write(sendmsg, len);
 	//接收指令的回复
-	ret = io_spi_read(readbuff, Empty_Msg_BufferLength);
+	ret = io_spi_read(readmsg, Empty_Msg_BufferLength);
 	Sent_packs++;
 	if(ret < 0)
-		return RET_ERROR;
+	{
+		printf("Read ACK Error, resend data.\n");
+		usleep(10000);
+		MsgIDCountDown();
+		tryed_resend++;
+		goto Resend;
+	}
 	if(bus_spi_RecvCRC == 0)
 	{
 		hex_dump(ResevedMsg, len + 4, 32,"CRCSEND");
-		hex_dump(readbuff, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "CRCERR");
+		hex_dump(readmsg, Empty_Msg_BufferLength, 32, "CRCERR");
 	}
-	if(readbuff[0] == MSG_HEAD && readbuff[Empty_Msg_BufferLength -2] == MSG_END)
+	if(readmsg[0] == MSG_HEAD && readmsg[Empty_Msg_BufferLength -2] == MSG_END)
 	{
-		if(readbuff[2] == RECV_ACK)
+		if(readmsg[2] == MSGRETURN)
 		{
 			if(bus_spi_RecvCRC == 0)
 			{
 				printf("CRC Error, but get correct return\n");
 			}
-			return 0;
+			return RET_OK;
 		}
-		else if(readbuff[2] == RECV_NCK)
+		else if(readmsg[2] == RECV_NCK)
 		{
 			hex_dump(ResevedMsg, len + 4, 32,"NCKSEND");
-			hex_dump(readbuff, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "NCKRECV");
+			hex_dump(readmsg, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "NCKRECV");
 			error_packs++;
-			if(readbuff[1] == MsgId)
+			if(readmsg[1] == MsgId)
 			{
-				//正确收发完成，并且副板无法执行主板下发的指令要求，需要上层处理
-				return -2;
+				return RET_ERROR;
 			}
-			else if(readbuff[1] == MsgId - 1)
+			else if(readmsg[1] == MsgId - 1)
 			{
 				printf("Can Resend the last pack.\n");
+				usleep(10000);
 				MsgIDCountDown();
 				goto Resend;
 			}
 			else
 			{
-				printf("Cann't Resend the last pack with MsgID<%d>.\n", readbuff[1]);
+				printf("Cann't Resend the last pack with MsgID<%d>.\n", readmsg[1]);
 				return RET_ERROR;
 			}
 		}
-	}
-	else
-	{
-		error_packs++;
-		hex_dump(readbuff, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "ERR");
-		printf("Can not receive a correct pack, resend the last message.\n");
-		tryed_resend++;
-		if(tryed_resend >= MaxRetry)
+		else
 		{
-			tryed_resend = 0;
-			return RET_ERROR;
+			if(readmsg[1] == MsgId)
+			{
+				printf("The pack is wrong, send a new pack.\n");
+				tryed_resend++;
+				usleep(10000);
+				goto Resend;
+			}
 		}
-		usleep(10000);
-		MsgIDCountDown();
-		goto Resend;
 	}
+	error_packs++;
+	hex_dump(readmsg, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "ERR");
+	printf("Can not receive a correct pack, resend the last message.\n");
+	tryed_resend++;
+	usleep(10000);
+	MsgIDCountDown();
+	goto Resend;
+}
+
+//应该交由上层管理控制
+static int32_t MSG_SendData(uint8_t* packdata,uint32_t len)
+{
+	uint8_t readbuff[Empty_Msg_BufferLength];
+	memset(readbuff, 0, Empty_Msg_BufferLength);
+	return MSG_DealWith(packdata, len, readbuff, RECV_ACK);
 }
 
 static int32_t MSG_SendLength(uint32_t len, uint32_t pack)
 {
 	//制作长度包下发
-	tryed_resend = 0;
-	uint8_t data[Empty_Msg_BufferLength - 4] = {0,};
+	uint8_t data[Empty_Msg_BufferLength - 4];
+	memset(data, 0, Empty_Msg_BufferLength - 4);
 	data[0] = MSG_SENDLENGTH;
 	data[1] = len >> 8;
 	data[2] = len & 0xFF;
@@ -291,142 +328,19 @@ static int32_t MSG_SendLength(uint32_t len, uint32_t pack)
 	}
 	uint8_t readbuff[Empty_Msg_BufferLength];
 	memset(readbuff, 0, Empty_Msg_BufferLength);
-	//发送指令信息	
-Resend:
-	io_spi_write(data, sizeof(data));
-	//接收指令的回复
-	ret = io_spi_read(readbuff, Empty_Msg_BufferLength);
-	Sent_packs++;
-	if(ret < 0)
-		return RET_ERROR;
-
-	if(bus_spi_RecvCRC == 0)
-	{
-		hex_dump(ResevedMsg, sizeof(data) + 4, 32,"CRCSEND");
-		hex_dump(readbuff, Empty_Msg_BufferLength, Empty_Msg_BufferLength, "CRCERR");
-	}
-	if(readbuff[0] == MSG_HEAD && readbuff[Empty_Msg_BufferLength -2] == MSG_END)
-	{
-		if(readbuff[2] == RECV_ACK)
-		{
-			if(bus_spi_RecvCRC == 0)
-			{
-				printf("CRC Error, but get correct return\n");
-			}
-			return RET_OK;
-		}
-		else if(readbuff[2] == RECV_NCK)
-		{
-			hex_dump(ResevedMsg, sizeof(data) + 4, 32,"NCKSEND");
-			hex_dump(readbuff, Empty_Msg_BufferLength, Empty_Msg_BufferLength, "NCKRECV");
-			error_packs++;
-			if(readbuff[1] == MsgId)
-			{
-				//正确收发完成，并且副板无法执行主板下发的指令要求，需要上层处理
-				return RET_ERROR;
-			}
-			else if(readbuff[1] == MsgId - 1)
-			{
-				printf("Can Resend the last pack.\n");
-				MsgIDCountDown();
-				goto Resend;
-			}
-			else
-			{
-				printf("Cann't Resend the last pack with MsgID<%d>.\n", readbuff[1]);
-				return RET_ERROR;
-			}
-		}
-	}
-	else
-	{
-		error_packs++;
-		hex_dump(readbuff, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "ERR");
-		printf("Can not receive a correct pack, resend the last message.\n");
-		tryed_resend++;
-		if(tryed_resend >= MaxRetry)
-		{
-			tryed_resend = 0;
-			return RET_ERROR;
-		}
-		usleep(10000);
-		MsgIDCountDown();
-		goto Resend;
-	}
+	return MSG_DealWith(data, Empty_Msg_BufferLength - 4, readbuff, RECV_ACK);
 }
 
 //应该交由上层管理控制
 static int32_t MSG_SendQUERYPACK(void)
 {
-	tryed_resend = 0;
 	//制作长度包下发
-	uint8_t data[Empty_Msg_BufferLength - 4] = {0,};
+	uint8_t data[Empty_Msg_BufferLength - 4];
+	memset(data, 0, Empty_Msg_BufferLength - 4);
 	data[0] = MSG_QUERYPACK;
 	uint8_t readbuff[Empty_Msg_BufferLength];
 	memset(readbuff, 0, Empty_Msg_BufferLength);
-	CRC_Warning = 0;
-Resend:
-	//发送指令信息	
-	io_spi_write(data, sizeof(data));
-	//接收指令的回复
-	ret = io_spi_read(readbuff, Empty_Msg_BufferLength);
-	Sent_packs++;
-	if(ret < 0)
-		return RET_ERROR;
-	if(bus_spi_RecvCRC == 0)
-	{
-		hex_dump(ResevedMsg, sizeof(data) + 4, 32,"CRCSEND");
-		hex_dump(readbuff, Empty_Msg_BufferLength, 32, "CRCERR");
-	}
-	if(readbuff[0] == MSG_HEAD && readbuff[Empty_Msg_BufferLength -2] == MSG_END)
-	{
-		if(readbuff[2] == MSG_QUERYPACK)
-		{
-			uint8_t remainpack = readbuff[3];
-			if(bus_spi_RecvCRC == 0)
-			{
-				printf("CRC Error, but get value:%d\n", remainpack);
-			}
-			return remainpack;
-		}
-		else if(readbuff[2] == RECV_NCK)
-		{
-			hex_dump(ResevedMsg, sizeof(data) + 4, 32,"NCKSEND");
-			hex_dump(readbuff, Empty_Msg_BufferLength, 32, "NCKRECV");
-			error_packs++;
-			if(readbuff[1] == MsgId)
-			{
-				//正确收发完成，并且副板无法执行主板下发的指令要求，需要上层处理
-				return -2;
-			}
-			else if(readbuff[1] == MsgId- 1)
-			{
-				printf("Can Resend the last pack.\n");
-				MsgIDCountDown();
-				goto Resend;
-			}
-			else
-			{
-				printf("Cann't Resend the last pack with MsgID<%d>.\n", readbuff[1]);
-				return RET_ERROR;
-			}
-		}
-	}
-	else
-	{
-		error_packs++;
-		hex_dump(readbuff, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "ERR");
-		printf("Can not receive a correct pack, resend the last message.\n");
-		tryed_resend++;
-		if(tryed_resend >= MaxRetry)
-		{
-			tryed_resend = 0;
-			return RET_ERROR;
-		}
-		usleep(10000);
-		MsgIDCountDown();
-		goto Resend;
-	}
+	return MSG_DealWith(data, Empty_Msg_BufferLength - 4, readbuff, MSG_QUERYPACK);
 }
 
 /* Public functions ----------------------------------------------------------*/
@@ -487,9 +401,9 @@ int32_t bus_spi_open(void)
 }
 
 //应该重写，仅进行收发操作
-int32_t bus_spi_write(const char *data, uint32_t len)
+int32_t bus_spi_write(char *data, uint32_t len)
 {
-	time(&time_op); 
+	Sent_packs = 0;
 	//判定包长
  	uint16_t sendpacklength = MAX_PACKLENGTH;
 	uint16_t packages = (len - 1) / MAX_PACKLENGTH + 1;
@@ -497,16 +411,23 @@ int32_t bus_spi_write(const char *data, uint32_t len)
 	uint32_t sendoffset = 0;
 	int32_t RET;
 
-	APP_DEBUGF_HEX(SPI_DEBUG | APP_DBG_TRACE, data, len);
 	while(packages > 0){
 		//确认收发包有大于门限个可发送或者大于剩余可发送
 		RemainPack = MSG_SendQUERYPACK();
-		if(RemainPack<0)
+		if(RemainPack < 0)
+		{
+			printf("Subboard cannot return querylength.\n");
 			return RET_ERROR;
+		}
 		while(RemainPack < packages && RemainPack < PACK_GATE)
 		{
 			usleep(1);
 			RemainPack = MSG_SendQUERYPACK();
+			if(RemainPack < 0)
+			{
+				printf("Subboard cannot return querylength.\n");
+				return RET_ERROR;
+			}
 		}
 		//确认收发包有大于门限个可发送或者大于剩余可发送
 
@@ -554,7 +475,7 @@ int32_t bus_spi_write(const char *data, uint32_t len)
 			RET = MSG_SendData(FullsizePack, sendpacklength);
 			if(RET < 0)
 			{
-				printf("Send data with unknown error, MsgId:%d, Message:\n<%s>\n", MsgId, ResevedMsg);
+				printf("Send data with unknown error, MsgId:%d\n", MsgId);
 				return RET_ERROR;
 			}
 		}
@@ -563,23 +484,20 @@ int32_t bus_spi_write(const char *data, uint32_t len)
 		packages = packages - shortpacks;
 	}
 	//轮询到缓存空掉
-/*
-	RemainPack = MSG_SendQUERYPACK();
-	while(RemainPack < MAX_PACK)
-	{
-		usleep(1);
-		RemainPack = MSG_SendQUERYPACK();
-	}
-	time(&time_ed);
-	*/
+	// RemainPack = MSG_SendQUERYPACK();
+	// while(RemainPack < MAX_PACK)
+	// {
+	// 	usleep(1);
+	// 	RemainPack = MSG_SendQUERYPACK();
+	// }
 	return 0;
 }
 
-int32_t bus_spi_read(char *buff, uint32_t len)
+void *bus_spi_read(char *buff, int len)
 {
-	resendcount = 0;
+	re_readcount = 0;
 Reget:
-	transfer(spi_fd, empty, (uint8_t*)buff, len);
+	transfer(spi_fd, empty, buff, len);
 	//是否有全一样的包，有就说明副板没准备好，再收一次
 	char temp = buff[0];
 	int resend = 1;
@@ -595,16 +513,16 @@ Reget:
 	}
 	if(resend == 1)
 	{
-		resendcount++;
-		if(resendcount >= 100)
+		re_readcount++;
+		if(re_readcount >= 20)
 		{
-			printf("Re-receive pack error, 100 times trying.\n");
+			printf("Re-receive pack error, 20 times trying.\n");
 		}
 		else
 			goto Reget;
 	}	
 	//再收一次逻辑结束
-	if(crc_high_first((unsigned char*)buff, len - 1) == buff[len - 1])
+	if(crc_high_first(buff, len - 1) == buff[len - 1])
 	{
 		bus_spi_RecvCRC = 1;
 	}
@@ -612,7 +530,7 @@ Reget:
 	{
 		bus_spi_RecvCRC = 0;
 	}
-	return len;
+	return buff;
 }
 
 int32_t bus_spi_ioctrl(BUS_CTRL_MSG *msg)
