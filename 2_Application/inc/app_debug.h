@@ -14,13 +14,19 @@
 #define  APP_DEBUG_H
 /* Includes ------------------------------------------------------------------*/
 #include "platform.h"
-#include "stdio.h"
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 #define APP_DEBUG                       APP_DBG_ON
 #define APP_ASSERT_ENABLE
+//#define DEBUG_INTO_FILE 
+
+FILE *log_flie;
 
 #ifdef APP_ASSERT_ENABLE
 #include <assert.h>
@@ -33,17 +39,16 @@
 #define APP_DBG_TYPES_ON                (APP_DBG_ON | APP_DBG_TRACE | APP_DBG_STATE)
 #define APP_DBG_MIN_LEVEL               APP_DBG_LEVEL_ALL    //APP_DBG_LEVEL_ALL APP_DBG_LEVEL_WARNING
 
-
-void log_dbg_printf(const char *fmt, ...);
 void sys_arch_assert(const char* file, int line);
 void print_hex(const char* data, int data_len);
 #ifdef APP_DEBUG_TO_LOG
-#	define APP_PLATFORM_DIAG(x)	do {log_dbg_printf x;} while(0)
-#	define APP_PLATFORM_ASSERT(x) do {log_dbg_printf(x); assert(0);}while(0)
+#   define APP_PLATFORM_DIAG(x)	do {fprintf_file x;} while(0)
+#   define APP_PLATFORM_DIAG_HEX(x, n) do {print_hex_file(x, n);} while(0)
+#   define APP_PLATFORM_ASSERT(x) do {fprintf_file (x); assert(0);}while(0)
 #else
 #   define APP_PLATFORM_DIAG(x)	do {printf x;} while(0)
 #   define APP_PLATFORM_DIAG_HEX(x, n) do {print_hex(x, n);} while(0)
-#   define APP_PLATFORM_ASSERT(x) do {printf(x); assert(0);}while(0)
+#   define APP_PLATFORM_ASSERT(x) do {printf(x); assert(0);} while(0)
 #endif
 #	define APP_PLATFORM_DIAG_USART(x)	do {printf x;} while(0)
 /** lower two bits indicate debug level
@@ -121,6 +126,10 @@ void print_hex(const char* data, int data_len);
 #endif /* APP_DEBUG */
 
 /* Exported functions --------------------------------------------------------*/ 
+void log_dbg_init(void);
+void print_hex_file(const char* data, int data_len);
+void print_hex(const char* data, int data_len);
+void fprintf_file(const char *fmt, ...);
 
 #endif
 /********************** (C) COPYRIGHT HJ technologies *************************/

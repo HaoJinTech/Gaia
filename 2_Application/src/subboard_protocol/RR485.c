@@ -179,6 +179,7 @@ LOCAL char *make_new_buf(long dest_type, int32_t *ch, int32_t *val, uint32_t ch_
   buf_i++;
   buf[buf_i] = 255;
   buf_i++;
+  *out_len = buf_i;
 
   return buf;
 }

@@ -4,6 +4,7 @@
 #include "cmd_manager.h"
 #include "bll_manager.h"
 #include "subboard_manager.h"
+#include "app_debug.h"
 
 #include <stdio.h>
 
@@ -27,6 +28,7 @@ int main(void)
 int main(void)
 {
     int32_t ret = RET_OK;
+    log_dbg_init();
     config_init();
     ret = init_rfboard_manager();
     ret = init_bll_manager();

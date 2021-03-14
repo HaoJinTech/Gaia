@@ -15,7 +15,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define PRJ_FILE_PATH  "./prj_files" 
+#define PRJ_FILE_PATH  "/home/pi/git/Gaia/2_Application/prj_files" 
 #define CLI_NUM_MAX         64
 #define SERVER_PORT_DEF     50000
 #define FILE_PATH_LEN       128
