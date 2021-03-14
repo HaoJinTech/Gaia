@@ -40,6 +40,7 @@
 #define MAX_PACKLENGTH 				1021
 #define MAX_PACK					20
 #define PACK_GATE					10
+#define MaxRetry					20
 #define DEVICE_NAME_LENTH  64
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -54,6 +55,7 @@ static time_t time_op;//, time_ed;
 //test
 static int32_t Sent_packs = 0;
 static int32_t error_packs = 0;
+static int32_t tryed_resend = 0;
 static int CRC_Warning = 0;
 static int RemainPack = 0;
 static uint8_t FullsizePack[MAX_PACKLENGTH + 6];
@@ -181,6 +183,7 @@ Reget:
 	}
 	if(resend == 1)
 	{
+		usleep(10000);
 		resendcount++;
 		if(resendcount >= 100)
 		{
@@ -207,6 +210,7 @@ Reget:
 //应该交由上层管理控制
 static int32_t MSG_SendData(uint8_t* packdata,uint32_t len)
 {
+	tryed_resend = 0;
 	uint8_t readbuff[Empty_Msg_BufferLength];
 	memset(readbuff, 0, Empty_Msg_BufferLength);
 	//发送指令信息	
@@ -251,19 +255,31 @@ Resend:
 			else
 			{
 				printf("Cann't Resend the last pack with MsgID<%d>.\n", readbuff[1]);
+				return RET_ERROR;
 			}
 		}
 	}
-	error_packs++;
-	hex_dump(readbuff, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "ERR");
-	printf("Can not receive a correct pack, resend the last message.\n");
-	MsgIDCountDown();
-	goto Resend;
+	else
+	{
+		error_packs++;
+		hex_dump(readbuff, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "ERR");
+		printf("Can not receive a correct pack, resend the last message.\n");
+		tryed_resend++;
+		if(tryed_resend >= MaxRetry)
+		{
+			tryed_resend = 0;
+			return RET_ERROR;
+		}
+		usleep(10000);
+		MsgIDCountDown();
+		goto Resend;
+	}
 }
 
 static int32_t MSG_SendLength(uint32_t len, uint32_t pack)
 {
 	//制作长度包下发
+	tryed_resend = 0;
 	uint8_t data[Empty_Msg_BufferLength - 4] = {0,};
 	data[0] = MSG_SENDLENGTH;
 	data[1] = len >> 8;
@@ -297,7 +313,7 @@ Resend:
 			{
 				printf("CRC Error, but get correct return\n");
 			}
-			return 0;
+			return RET_OK;
 		}
 		else if(readbuff[2] == RECV_NCK)
 		{
@@ -307,7 +323,7 @@ Resend:
 			if(readbuff[1] == MsgId)
 			{
 				//正确收发完成，并且副板无法执行主板下发的指令要求，需要上层处理
-				return -2;
+				return RET_ERROR;
 			}
 			else if(readbuff[1] == MsgId - 1)
 			{
@@ -318,20 +334,31 @@ Resend:
 			else
 			{
 				printf("Cann't Resend the last pack with MsgID<%d>.\n", readbuff[1]);
-
+				return RET_ERROR;
 			}
 		}
 	}
-	error_packs++;
-	hex_dump(readbuff, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "ERR");
-	printf("Can not receive a correct pack, resend the last message.\n");
-	MsgIDCountDown();
-	goto Resend;
+	else
+	{
+		error_packs++;
+		hex_dump(readbuff, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "ERR");
+		printf("Can not receive a correct pack, resend the last message.\n");
+		tryed_resend++;
+		if(tryed_resend >= MaxRetry)
+		{
+			tryed_resend = 0;
+			return RET_ERROR;
+		}
+		usleep(10000);
+		MsgIDCountDown();
+		goto Resend;
+	}
 }
 
 //应该交由上层管理控制
 static int32_t MSG_SendQUERYPACK(void)
 {
+	tryed_resend = 0;
 	//制作长度包下发
 	uint8_t data[Empty_Msg_BufferLength - 4] = {0,};
 	data[0] = MSG_QUERYPACK;
@@ -381,14 +408,25 @@ Resend:
 			else
 			{
 				printf("Cann't Resend the last pack with MsgID<%d>.\n", readbuff[1]);
+				return RET_ERROR;
 			}
 		}
 	}
-	error_packs++;
-	hex_dump(readbuff, Empty_Msg_BufferLength, Empty_Msg_BufferLength, "ERR");
-	printf("Can not receive a correct pack, resend the last message.\n");
-	MsgIDCountDown();
-	goto Resend;
+	else
+	{
+		error_packs++;
+		hex_dump(readbuff, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "ERR");
+		printf("Can not receive a correct pack, resend the last message.\n");
+		tryed_resend++;
+		if(tryed_resend >= MaxRetry)
+		{
+			tryed_resend = 0;
+			return RET_ERROR;
+		}
+		usleep(10000);
+		MsgIDCountDown();
+		goto Resend;
+	}
 }
 
 /* Public functions ----------------------------------------------------------*/
