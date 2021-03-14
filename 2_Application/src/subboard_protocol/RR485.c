@@ -151,15 +151,9 @@ LOCAL char *make_new_buf(long dest_type, int32_t *ch, int32_t *val, uint32_t ch_
     break;
     case DEST_UPLD_ATT:
       buf[0] = CMD_TYPE_ATT_LOAD;
-      buf[1] = 0;
-      buf[2] = 0;
-      buf_i = 3;
     break;
     case DEST_UPLD_PHA:
       buf[0] = CMD_TYPE_PHA_LOAD;
-      buf[1] = 0;
-      buf[2] = 0;
-      buf_i = 3;
     break;
   }
 
