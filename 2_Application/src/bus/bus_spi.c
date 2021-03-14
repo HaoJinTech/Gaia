@@ -161,25 +161,6 @@ static int32_t io_spi_write(uint8_t *data, uint32_t len)
 	return 0;
 }
 
-static int32_t io_spi_write(uint8_t *data, uint32_t len)
-{
-	uint8_t crccode;
-	uint8_t packmsg[len + 4];
-	uint8_t readmsg[len + 4];
-	memset(packmsg, 0, len + 4);
-	memset(readmsg, 0, len + 4);
-	packmsg[0] = MSG_HEAD;
-	packmsg[1]= GetMsgID();
-	memcpy(packmsg + 2, data, len);
-	packmsg[len + 2] = MSG_END;
-	crccode = crc_high_first(packmsg, len + 3);
-	packmsg[len + 3] = crccode;
-	memset(ResevedMsg, 0, len + 4);
-	memcpy(ResevedMsg, packmsg, len + 4);
-	transfer(spi_fd, packmsg, readmsg, len + 4);
-	return 0;
-}
-
 static int32_t io_spi_read(uint8_t *buff, int len)
 {
 	re_readcount =0;
