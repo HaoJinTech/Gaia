@@ -25,7 +25,7 @@
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
 /* Private typedef -----------------------------------------------------------*/
-#define SPI_DEBUG  APP_DBG_OFF
+#define SPI_DEBUG  APP_DBG_ON
 /* Private define ------------------------------------------------------------*/
 #define ARRAY_SIZE(a) 				(sizeof(a) / sizeof((a)[0]))
 
