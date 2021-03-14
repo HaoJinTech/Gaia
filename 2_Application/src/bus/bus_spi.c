@@ -217,6 +217,7 @@ Resend:
 	}
 	io_spi_write(sendmsg, len);
 	//接收指令的回复
+	usleep(20);
 	ret = io_spi_read(readmsg, Empty_Msg_BufferLength);
 	Sent_packs++;
 	if(ret < 0)
