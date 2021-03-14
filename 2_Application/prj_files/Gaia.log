@@ -1,7 +1,7 @@
-src/sys_config.c:72:1: config_get_int: ATT_MAX_CH : 2048 
-src/sys_config.c:72:1: config_get_int: src/subboard_manager.c:66:1: rfboard_manager: ATT_MAX_VAL : 440 
+src/sys_config.c:72:1: config_get_int: src/subboard_manager.c:66:1: rfboard_manager: start msgrcv ...
+ATT_MAX_CH : 2048 
+src/sys_config.c:72:1: config_get_int: ATT_MAX_VAL : 440 
 src/sys_config.c:72:1: config_get_int: ATT_LOGIC_STEP : 2 
-start msgrcv ...
 src/sys_config.c:72:1: config_get_int: ATT_BD_STEP : 2 
 src/sys_config.c:85:1: config_get_bool: ATT_REMAP_ENABLE : 1 
 src/sys_config.c:72:1: config_get_int: ATT_REMAP_INDEX : 0 
@@ -103,10 +103,10 @@ src/sys_config.c:72:1: config_get_int: CASE_PROTOCOL : 0
 src/sys_config.c:72:1: config_get_int: CASE_BUS : 0 
 src/sys_config.c:85:1: config_get_boolsrc/sys_config.c:72:1: config_get_int: ATT_MAX_CH : 2048 
 src/sys_config.c:72:1: config_get_int: ATT_MAX_VAL : 440 
+src/subboard_manager.c:66:1: rfboard_manager: start msgrcv ...
 src/sys_config.c:72:1: config_get_int: ATT_LOGIC_STEP : 2 
 src/sys_config.c:72:1: config_get_int: ATT_BD_STEP : 2 
 src/sys_config.c:85:1: config_get_bool: ATT_REMAP_ENABLE : 1 
-src/subboard_manager.c:66:1: rfboard_manager: start msgrcv ...
 src/sys_config.c:72:1: config_get_int: ATT_REMAP_INDEX : 0 
 src/sys_config.c:72:1: config_get_int: ATT_PROTOCOL : 0 
 src/bus/bus_uart.c:142:1: bus_uart_write:
@@ -207,3 +207,323 @@ src/sys_config.c:72:1: config_get_int: CASE_BUS : 0
 src/sys_config.c:85:1: config_get_bool: CASE_REMAP_ENABLE : 0 
 src/sys_config.c:72:1: config_get_int: CASE_REMAP_INDEX : 0 
 src/tcp_server.c:246:1: listen_loop: start epoll ...
+src/tcp_server.c:143:1: accept_conn: accept recv: ÿûÿû ÿûÿû'ÿýÿûÿý™ö¶ÿÿÿÿsrc/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: f
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: 
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: 
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: 
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: 
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: CSLS
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: LS
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: 
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: 
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: 
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: CSLS
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: 
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: 
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: 
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: 
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: 
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: CSLS
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: 
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: 
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: CSL
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: CSLS
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: 
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: ATT 1 1
+src/bll/bll_ch_remap.c:95:1: ch_remap: 0->0
+src/subboard_manager.c:81:1: do_protocal: send to subboard (protocol:0)(bus:1).
+src/subboard_protocol/RR485.c:313:1: radio_rack_485_write: write data(type:1).
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: ATT 1 23
+src/bll/bll_ch_remap.c:95:1: ch_remap: 0->0
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: CSLS
+src/subboard_manager.c:81:1: do_protocal: send to subboard (protocol:0)(bus:1).
+src/subboard_protocol/RR485.c:313:1: radio_rack_485_write: write data(type:1).
+src/subboard_manager.c:81:1: do_protocal: send to subboard (protocol:0)(bus:1).
+src/subboard_protocol/RR485.c:313:1: radio_rack_485_write: write data(type:1).
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: CSUPLD test_2048ch_10line.csv
+src/bll/bll_case_manager.c:1209:1: check_case_exist: full_path:/home/pi/git/Gaia/2_Application/prj_files/case/test_2048ch_10line.csv.
+src/bll/bll_case_manager.c:640:1: upload_case: case_type = 3.
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: CSLS
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: CSINFO
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: CSINFO
+src/bll/bll_case_manager.c:544:1: upload_to_subboard_ex: upload line:0
+src/bll/bll_case_manager.c:544:1: upload_to_subboard_ex: upload line:1
+src/bll/bll_case_manager.c:544:1: upload_to_subboard_ex: upload line:2
+src/bll/bll_case_manager.c:544:1: upload_to_subboard_ex: upload line:3
+src/bll/bll_case_manager.c:544:1: upload_to_subboard_ex: upload line:4
+src/bll/bll_case_manager.c:544:1: upload_to_subboard_ex: upload line:5
+src/bll/bll_case_manager.c:544:1: upload_to_subboard_ex: upload line:6
+src/bll/bll_case_manager.c:544:1: upload_to_subboard_ex: upload line:7
+src/bll/bll_case_manager.c:544:1: upload_to_subboard_ex: upload line:8
+src/bll/bll_case_manager.c:544:1: upload_to_subboard_ex: upload line:9
+src/bll/bll_case_manager.c:544:1: upload_to_subboard_ex: upload line:10
+src/bll/bll_case_manager.c:503:1: upload_to_subboard_ex:  middle file created.
+src/subboard_manager.c:81:1: do_protocal: send to subboard (protocol:0)(bus:1).
+src/subboard_protocol/RR485.c:313:1: radio_rack_485_write: write data(type:1).
+src/subboard_manager.c:81:1: do_protocal: send to subboard (protocol:0)(bus:1).
+src/subboard_protocol/RR485.c:313:1: radio_rack_485_write: write data(type:6).
+src/subboard_manager.c:81:1: do_protocal: send to subboard (protocol:0)(bus:1).
+src/subboard_protocol/RR485.c:313:1: radio_rack_485_write: write data(type:6).
+src/subboard_manager.c:81:1: do_protocal: send to subboard (protocol:0)(bus:1).
+src/subboard_protocol/RR485.c:313:1: radio_rack_485_write: write data(type:6).
+src/subboard_manager.c:81:1: do_protocal: send to subboard (protocol:0)(bus:1).
+src/subboard_protocol/RR485.c:313:1: radio_rack_485_write: write data(type:6).
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: CSINFO
+src/subboard_manager.c:81:1: do_protocal: send to subboard (protocol:0)(bus:1).
+src/subboard_protocol/RR485.c:313:1: radio_rack_485_write: write data(type:6).
+src/subboard_manager.c:81:1: do_protocal: send to subboard (protocol:0)(bus:1).
+src/subboard_protocol/RR485.c:313:1: radio_rack_485_write: write data(type:6).
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: CSRUN test_2048ch_10line.csv 1 10 0
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 00 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 01 FF FF                                                                                  .....
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: CSLS
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 02 FF FF                                                                                  .....
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: CSINFO
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 03 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 04 FF FF                                                                                  .....
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/tcp_server.c:186:1: check_buf_and_send_msg: get line: CSINFO
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 05 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 06 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 07 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 08 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 09 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 0A FF FF                                                                                  .....
+src/bll/bll_case_manager.c:274:1: case_end: case(test_2048ch_10line.csv) times left(10).
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 00 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 01 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 02 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 03 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 04 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 05 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 06 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 07 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 08 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 09 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 0A FF FF                                                                                  .....
+src/bll/bll_case_manager.c:274:1: case_end: case(test_2048ch_10line.csv) times left(9).
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 00 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 01 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 02 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 03 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 04 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 05 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 06 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 07 FF FF                                                                          src/sys_config.c:72:1: config_get_int: ATT_MAX_CH : 2048 
+src/sys_config.c:72:1: config_get_int: ATT_MAX_VAL : 440 
+src/subboard_manager.c:66:1: rfboard_manager: src/sys_config.c:72:1: config_get_int: start msgrcv ...
+ATT_LOGIC_STEP : 2 
+src/sys_config.c:72:1: config_get_int: ATT_BD_STEP : 2 
+src/sys_config.c:85:1: config_get_bool: ATT_REMAP_ENABLE : 1 
+src/sys_config.c:72:1: config_get_int: ATT_REMAP_INDEX : 0 
+src/sys_config.c:72:1: config_get_int: ATT_PROTOCOL : 0 
+src/bus/bus_uart.c:142:1: bus_uart_write:
+# 00000000   F8 00 00 00 00 FF FF                                                                            .......
+src/subboard_protocol/RR485.c:291:1: radio_rack_485_open: get rf board init info failed,try again.
+src/bus/bus_uart.c:142:1: bus_uart_write:
+# 00000000   F8 00 00 00 00 FF FF                                                                            .......
+src/subboard_protocol/RR485.c:291:1: radio_rack_485_open: get rf board init info failed,try again.
+src/bus/bus_uart.c:142:1: bus_uart_write:
+# 00000000   F8 00 00 00 00 FF FF                                                                            .......
+src/subboard_protocol/RR485.c:291:1: radio_rack_485_open: get rf board init info failed,try again.
+src/bus/bus_uart.c:142:1: bus_uart_write:
+# 00000000   F8 00 00 00 00 FF FF                                                                            .......
+src/subboard_protocol/RR485.c:291:1: radio_rack_485_open: get rf board init info failed,try again.
+src/subboard_protocol/RR485.c:300:1: radio_rack_485_open: s_board_num = 0,s_board_ch = 0.
+src/sys_config.c:72:1: config_get_int: ATT_BUS : 0 
+src/sys_config.c:72:1: config_get_int: PHA_MAX_CH : 2048 
+src/sys_config.c:72:1: config_get_int: PHA_MAX_VAL : 359 
+src/sys_config.c:85:1: config_get_bool: ATT_REMAP_ENABLE : 0 
+src/sys_config.c:72:1: config_get_int: ATT_REMAP_INDEX : 0 
+src/sys_config.c:72:1: config_get_int: ATT_PROTOCOL : 0 
+src/sys_config.c:72:1: config_get_int: ATT_BUS : 0 
+src/sys_config.c:59:1: config_get_string: CALI_FOLDER_PATH : Calibration/ 
+src/sys_config.c:98:1: config_get_array_lenth: array CALI_OBJS[2] 
+src/sys_config.c:85:1: config_get_bool: ADJ_PHA_BY_ATT : 1 
+src/sys_config.c:59:1: config_get_string: ADJ_PHA_BY_ATT_FILE : 2G6_inf.csv 
+src/bll/bll_calibration.c:610:1: init_calibration: load file:(Calibration/2G6_inf.csv).
+src/file_reader.c:83:1: csv_read_file: open file: /home/pi/git/Gaia/2_Application/prj_files/Calibration/2G6_inf.csv
+src/file_reader.c:62:1: get_file_row: line = 130
+src/bll/bll_calibration.c:107:1: get_inf_cal_data: round buffer read complite.
+src/bll/bll_calibration.c:107:1: get_inf_cal_data: round buffer read complite.
+src/bll/bll_calibration.c:107:1: get_inf_cal_data: round buffer read complite.
+src/file_reader.c:113:1: csv_read_file: file read complate.(fn = "Calibration/2G6_inf.csv",len = 0)
+src/sys_config.c:85:1: config_get_bool: ADJ_ATT_BY_PHA : 1 
+src/sys_config.c:59:1: config_get_string: ADJ_ATT_BY_PHA_FILE : 2G6_attinf.csv 
+src/bll/bll_calibration.c:620:1: init_calibration: load file:(Calibration/2G6_attinf.csv).
+src/file_reader.c:83:1: csv_read_file: open file: /home/pi/git/Gaia/2_Application/prj_files/Calibration/2G6_attinf.csv
+src/file_reader.c:62:1: get_file_row: line = 8
+src/bll/bll_calibration.c:159:1: get_attinf_cal_data: get_inf_cal_data: round buffer read complite.
+src/file_reader.c:113:1: csv_read_file: file read complate.(fn = "Calibration/2G6_attinf.csv",len = 0)
+src/sys_config.c:85:1: config_get_bool: ADJ_PHA_BY_TABLE : 1 
+src/sys_config.c:59:1: config_get_string: ADJ_PHA_BY_TABLE_FILE : 2G6_pha.csv 
+src/bll/bll_calibration.c:630:1: init_calibration: load file:(Calibration/2G6_pha.csv).
+src/file_reader.c:83:1: csv_read_file: open file: /home/pi/git/Gaia/2_Application/prj_files/Calibration/2G6_pha.csv
+src/file_reader.c:62:1: get_file_row: line = 360
+src/file_reader.c:113:1: csv_read_file: file read complate.(fn = "Calibration/2G6_pha.csv",len = 0)
+src/sys_config.c:85:1: config_get_bool: ADJ_PHA_BY_STRETCH : 1 
+src/sys_config.c:72:1: config_get_int: ADJ_PHA_BY_STRETCH_POINT : 11 
+src/sys_config.c:59:1: config_get_string: ADJ_PHA_BY_STRETCH_FILE : 2G6_stretch.csv 
+src/bll/bll_calibration.c:641:1: init_calibration: load file:(Calibration/2G6_stretch.csv).
+src/file_reader.c:83:1: csv_read_file: open file: /home/pi/git/Gaia/2_Application/prj_files/Calibration/2G6_stretch.csv
+src/file_reader.c:62:1: get_file_row: line = 2048
+src/file_reader.c:113:1: csv_read_file: file read complate.(fn = "Calibration/2G6_stretch.csv",len = 0)
+src/sys_config.c:59:1: config_get_string: NAME : 2G6 
+src/sys_config.c:85:1: config_get_bool: ADJ_PHA_BY_ATT : 1 
+src/sys_config.c:59:1: config_get_string: ADJ_PHA_BY_ATT_FILE : TEMP_inf.csv 
+src/bll/bll_calibration.c:610:1: init_calibration: load file:(Calibration/TEMP_inf.csv).
+src/file_reader.c:83:1: csv_read_file: open file: /home/pi/git/Gaia/2_Application/prj_files/Calibration/TEMP_inf.csv
+src/file_reader.c:62:1: get_file_row: line = 2
+src/bll/bll_calibration.c:107:1: get_inf_cal_data: round buffer read complite.
+src/file_reader.c:113:1: csv_read_file: file read complate.(fn = "Calibration/TEMP_inf.csv",len = 0)
+src/sys_config.c:85:1: config_get_bool: ADJ_ATT_BY_PHA : 1 
+src/sys_config.c:59:1: config_get_string: ADJ_ATT_BY_PHA_FILE : TEMP_attinf.csv 
+src/bll/bll_calibration.c:620:1: init_calibration: load file:(Calibration/TEMP_attinf.csv).
+src/file_reader.c:83:1: csv_read_file: open file: /home/pi/git/Gaia/2_Application/prj_files/Calibration/TEMP_attinf.csv
+src/file_reader.c:62:1: get_file_row: line = 0
+src/sys_config.c:85:1: config_get_bool: ADJ_PHA_BY_TABLE : 1 
+src/sys_config.c:59:1: config_get_string: ADJ_PHA_BY_TABLE_FILE : TEMP_pha.csv 
+src/bll/bll_calibration.c:630:1: init_calibration: load file:(Calibration/TEMP_pha.csv).
+src/file_reader.c:83:1: csv_read_file: open file: /home/pi/git/Gaia/2_Application/prj_files/Calibration/TEMP_pha.csv
+src/file_reader.c:62:1: get_file_row: line = 4096
+src/file_reader.c:113:1: csv_read_file: file read complate.(fn = "Calibration/TEMP_pha.csv",len = 0)
+src/sys_config.c:85:1: config_get_bool: ADJ_PHA_BY_STRETCH : 1 
+src/sys_config.c:72:1: config_get_int: ADJ_PHA_BY_STRETCH_POINT : 11 
+src/sys_config.c:59:1: config_get_string: ADJ_PHA_BY_STRETCH_FILE : TEMP_stretch.csv 
+src/bll/bll_calibration.c:641:1: init_calibration: load file:(Calibration/TEMP_stretch.csv).
+src/file_reader.c:83:1: csv_read_file: open file: /home/pi/git/Gaia/2_Application/prj_files/Calibration/TEMP_stretch.csv
+src/file_reader.c:62:1: get_file_row: line = 0
+src/sys_config.c:59:1: config_get_string: NAME : TEMP 
+src/sys_config.c:59:1: config_get_string: CALI_OFFSET_FILE : pha_offset.csv 
+src/file_reader.c:83:1: csv_read_file: open file: /home/pi/git/Gaia/2_Application/prj_files/Calibration/pha_offset.csv
+src/file_reader.c:62:1: get_file_row: line = 2048
+src/file_reader.c:113:1: csv_read_file: file read complate.(fn = "Calibration/pha_offset.csv",len = 0)
+src/sys_config.c:59:1: config_get_string: CALI_SAVED_POINTS_FILE : pha_freq.csv 
+src/bll/bll_calibration.c:687:1: init_calibration: sending calibreation sheet ...
+src/file_reader.c:83:1: csv_read_file: open file: /home/pi/git/Gaia/2_Application/prj_files/Calibration/pha_freq.csv
+src/file_reader.c:62:1: get_file_row: line = 2048
+src/file_reader.c:113:1: csv_read_file: file read complate.(fn = "Calibration/pha_freq.csv",len = 0)
+src/sys_config.c:59:1: config_get_string: REMAP_PATH : Ch_remap/ 
+src/sys_config.c:98:1: config_get_array_lenth: array REMAP_OBJ[1] 
+src/sys_config.c:59:1: config_get_string: REMAP_FILE : map_pha_128X16_2048_DT.csv 
+src/bll/bll_ch_remap.c:46:1: remap_read_file: open file: /home/pi/git/Gaia/2_Application/prj_files/Ch_remap/map_pha_128X16_2048_DT.csv
+src/bll/bll_ch_remap.c:56:1: remap_read_file: input file length: 4136
+src/bll/bll_case_manager.c:1060:1: init_model_case_manager: initialize case manager.
+src/sys_config.c:59:1: config_get_string: CASE_PATH : case/ 
+src/sys_config.c:72:1: config_get_int: CASE_PROTOCOL : 0 
+src/sys_config.c:72:1: config_get_int: CASE_BUS : 0 
+src/sys_config.c:85:1: config_get_bool: CASE_REMAP_ENABLE : 0 
+src/sys_config.c:72:1: config_get_int: CASE_REMAP_INDEX : 0 
+        .....
+src/subboard_manager.c:81:1: do_protocal: send to subboard (protocol:0)(bus:1).
+src/subboard_protocol/RR485.c:313:1: radio_rack_485_write: write data(type:6).
+src/subboard_manager.c:81:1: do_protocal: send to subboard (protocol:0)(bus:1).
+src/subboard_protocol/RR485.c:313:1: radio_rack_485_write: write data(type:6).
+src/subboard_manager.c:81:1: do_protocal: send to subboard (protocol:0)(bus:1).
+src/subboard_protocol/RR485.c:313:1: radio_rack_485_write: write data(type:6).
+src/subboard_manager.c:81:1: do_protocal: send to subboard (protocol:0)(bus:1).
+src/subboard_protocol/RR485.c:313:1: radio_rack_485_write: write data(type:6).
+src/subboard_manager.c:81:1: do_protocal: send to subboard (protocol:0)(bus:1).
+src/subboard_protocol/RR485.c:313:1: radio_rack_485_write: write data(type:6).
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 08 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 09 FF FF                                                                                  .....
+src/tcp_server.c:266:1: listen_loop: one client close the conne.
+src/tcp_server.c:197:1: recv_message: sock_fd = 7
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 0A FF FF                                                                                  .....
+src/bll/bll_case_manager.c:274:1: case_end: case(test_2048ch_10line.csv) times left(8).
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 00 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 01 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 02 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 03 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 04 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 05 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 06 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 07 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 08 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 09 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 0A FF FF                                                                                  .....
+src/bll/bll_case_manager.c:274:1: case_end: case(test_2048ch_10line.csv) times left(7).
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 00 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 01 FF FF                                                                                  .....
+src/subboard_protocol/RR485.c:395:1: radio_rack_485_ioctrl:
+# 00000000   E8 00 02 FF FF                                                                                  .....
+src/subbo

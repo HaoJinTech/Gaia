@@ -25,8 +25,10 @@
 #define FULL_LOG_FILE_SIZE  256
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
+#ifdef APP_DEBUG_TO_LOG
 LOCAL char log_full_path[FULL_LOG_FILE_SIZE];
 FILE *log_flie = NULL;
+#endif
 
 /* Private function prototypes -----------------------------------------------*/
 /* Public functions ----------------------------------------------------------*/
@@ -91,7 +93,7 @@ void print_hex(const char* data, int data_len)
     }
     return;
 } /* print_data */
-
+#ifdef APP_DEBUG_TO_LOG
 void print_hex_file(const char* data, int data_len)
 {
     int i, j;
@@ -165,15 +167,16 @@ void fprintf_file(const char *fmt, ...)
 	va_end(args);
 
     fprintf(log_flie, cmd_buf);
-    fflush(log_flie);
+//    fflush(log_flie);
     return;
 }
-
+#endif
 void log_dbg_init(void)
 {
 #if APP_DEBUG_TO_LOG
     snprintf(log_full_path, FULL_LOG_FILE_SIZE, "%s/Gaia.log", PRJ_FILE_PATH);
+    printf(log_full_path);
     log_flie = fopen (log_full_path,"a");
-    setbuf(log_flie,NULL);
+//    setbuf(log_flie,NULL);
 #endif
 }

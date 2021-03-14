@@ -16,6 +16,17 @@ _IP=$(hostname -I) || true
 if [ "$_IP" ]; then
   printf "My IP address is %s\n" "$_IP"
 fi
-su pi -c "exec /home/pi/git/Gaia/2_Application/Gaia"
+
+#LOG_PATH=/usr/Gaia/Gaia.log
+#LOG_PATH=/home/pi/git/Gaia/2_Application/Gaia.log
+APP_PATH=/home/pi/git/Gaia/2_Application/Gaia
+
+#if [ ! -d $LOG_PATH ];then
+#   touch $LOG_PATH
+#   chmod 777 $LOG_PATH
+#   chown pi:pi $LOG_PATH
+#fi
+
+su pi -c "exec $APP_PATH"
 
 exit 0

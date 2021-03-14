@@ -25,7 +25,7 @@
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
 /* Private typedef -----------------------------------------------------------*/
-#define SPI_DEBUG  APP_DBG_OFF
+#define SPI_DEBUG  APP_DBG_ON
 /* Private define ------------------------------------------------------------*/
 #define ARRAY_SIZE(a) 				(sizeof(a) / sizeof((a)[0]))
 
@@ -161,7 +161,7 @@ static int32_t io_spi_write(uint8_t *data, uint32_t len)
 	transfer(spi_fd, packmsg, readmsg, len + 4);
 	return 0;
 }
-
+/*
 static int32_t io_spi_write(uint8_t *data, uint32_t len)
 {
 	uint8_t crccode;
@@ -180,7 +180,7 @@ static int32_t io_spi_write(uint8_t *data, uint32_t len)
 	transfer(spi_fd, packmsg, readmsg, len + 4);
 	return 0;
 }
-
+*/
 static int32_t io_spi_read(uint8_t *buff, int len)
 {
 	re_readcount =0;
@@ -410,6 +410,8 @@ int32_t bus_spi_write(char *data, uint32_t len)
 	uint16_t shortpacks = 0;
 	uint32_t sendoffset = 0;
 	int32_t RET;
+
+	APP_DEBUGF_HEX(SPI_DEBUG | APP_DBG_TRACE, data, len);
 
 	while(packages > 0){
 		//确认收发包有大于门限个可发送或者大于剩余可发送
