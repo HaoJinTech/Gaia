@@ -509,18 +509,18 @@ LOCAL int8_t upload_to_subboard_ex(struct Case_item *case_item)
 		for(i=0; i<case_item->ch_max; i++){
 			if(case_item->case_type & CASE_TYPE_ATT){
 				if(new_line == 1){
-					temp_pha = 0;
-				}else{
-					c_val = case_get_word(case_item, &new_line, &count);
-					temp_pha = atoi(c_val);
-				}
-			}
-			if(case_item->case_type & CASE_TYPE_PHA){
-				if(new_line == 1){
 					temp_att = 0;
 				}else{
 					c_val = case_get_word(case_item, &new_line, &count);
 					temp_att = atoi(c_val);
+				}
+			}
+			if(case_item->case_type & CASE_TYPE_PHA){
+				if(new_line == 1){
+					temp_pha = 0;
+				}else{
+					c_val = case_get_word(case_item, &new_line, &count);
+					temp_pha = atoi(c_val);
 				}
 			}
 			if(calibration_is_enabled()){
@@ -528,13 +528,12 @@ LOCAL int8_t upload_to_subboard_ex(struct Case_item *case_item)
 				temp_pha = calibration_proc(case_item->cha_array[i], 
 								temp_att, temp_pha, &temp_att);
 			}
-
 			if(g_remap_enable){
-				temp_att_pha[case_item->cha_remap_arr[i]] = temp_att;
-				temp_att_pha[case_item->cha_remap_arr[i]+1] = temp_pha;
+				temp_att_pha[case_item->cha_remap_arr[i]*2] = temp_att;
+				temp_att_pha[case_item->cha_remap_arr[i]*2+1] = temp_pha;
 			}else{
-				temp_att_pha[case_item->cha_array[i]] = temp_att;
-				temp_att_pha[case_item->cha_array[i]+1] = temp_pha;
+				temp_att_pha[case_item->cha_array[i]*2] = temp_att;
+				temp_att_pha[case_item->cha_array[i]*2+1] = temp_pha;
 			}
 		}
 

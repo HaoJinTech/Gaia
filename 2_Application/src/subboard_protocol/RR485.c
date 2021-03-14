@@ -198,7 +198,7 @@ LOCAL char *make_new_ex_buf(long dest_type, int32_t *val, uint32_t ch_num, uint3
   //初始化值，进行内存分配
   char *buf = 0;
   uint32_t len = 0;
-  len = sizeof(char) * (ch_num * val_num * 3  + 3);
+  len = sizeof(char) * (ch_num * 3  + 3);
   *out_len = len;
   buf = (char*)malloc(len);
   
@@ -206,11 +206,22 @@ LOCAL char *make_new_ex_buf(long dest_type, int32_t *val, uint32_t ch_num, uint3
   //逐index获取值并解码
   uint32_t buf_i=1;
   uint32_t i =0;
+  /*
+used for load all the channels with both pha and att.
+|0   | 1    | 2    | 3    | ... | n-1  | n    |
+|230 | VALH | VALM | VALL | ... | 0xFF | 0xFF |
+-----------------------------------------------------
+| N|     ATT     |      PHA      |
+| 0 111 1111 1111 1111 1111 1111 |
+|   VALH    |  VALM   |   VALL   | 
+ATT = ((VALH & 0x7f) << 4) | ((VALH & 0xf0) >> 4);
+PHA = ((VALM & 0xf) << 8) | VALL
+*/
   for(i=0; i<ch_num; i++){
     buf[buf_i] = ((val[i * 2] >> 4) & 0x7f);
     buf_i++;
     buf[buf_i] = (val[i * 2] & 0xf) << 4;
-    buf[buf_i] += (val[i * 2 + 1] >> 8);
+    buf[buf_i] |= (val[i * 2 + 1] >> 8) &0Xf;
     buf_i++;
     buf[buf_i] = (val[i * 2 + 1] & 0xff);
     buf_i++;
