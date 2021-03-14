@@ -447,8 +447,10 @@ LOCAL int8_t upload_to_subboard(struct Case_item *case_item)
 				if(case_item->case_type & CASE_TYPE_PHA)
 					cha_temp_pha[i] = case_item->cha_array[i];
 			}
-			temp_att[i] = temp_att_val;
-			temp_pha[i] = temp_pha_val;
+			if(case_item->case_type & CASE_TYPE_ATT)
+				temp_att[i] = temp_att_val;
+			if(case_item->case_type & CASE_TYPE_PHA)
+				temp_pha[i] = temp_pha_val;
 		}
 
 		/* get new line */
