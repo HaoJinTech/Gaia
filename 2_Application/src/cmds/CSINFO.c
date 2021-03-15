@@ -19,13 +19,14 @@
 
 LOCAL void cmd_CSINFO_print_stuff(char *case_name, uint32_t dest_fd, SEND_BUF send_buf_fun)
 {
-    uint32_t times = 0, line_max = 0;
+    uint32_t times = 0, line_max = 0, current_line = 0;
     CASE_STATE state;
     struct Case_item *case_item = NULL;
 
     case_item = get_case_item(case_name);
     times = get_case_times(case_item);
     line_max = get_case_line_max(case_item);
+    current_line = get_case_current_line(case_item);
     state = get_case_state(case_item, NULL, 0);
     switch(state){
       case CASE_STATE_BUSY:
@@ -34,7 +35,7 @@ LOCAL void cmd_CSINFO_print_stuff(char *case_name, uint32_t dest_fd, SEND_BUF se
       case CASE_STATE_RUN:
       case CASE_STATE_STOP:
       case CASE_STATE_PAUSE:
-        send_buf_fun(dest_fd, "%s %s %d %d %d\r\n", KEY_CSINFO, case_name, state, times, line_max);
+        send_buf_fun(dest_fd, "%s %s %d %d %d\r\n", KEY_CSINFO, case_name, state, times, current_line);
         break;
       case CASE_STATE_UNLOADED:
         send_buf_fun(dest_fd, "%s %s %d %d %d\r\n", KEY_CSINFO, case_name, state, 0, 0);
