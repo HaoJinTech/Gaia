@@ -497,6 +497,7 @@ LOCAL int8_t upload_to_subboard_ex(struct Case_item *case_item)
 	}
 	
 	case_item->line_max = 0;
+	uint32_t snd_index = get_msg_snd_index();
 	while(1){
 		/* this c_val is interval(ms) for every line */
 		c_val = case_get_word(case_item, &new_line, &count);
@@ -546,10 +547,15 @@ LOCAL int8_t upload_to_subboard_ex(struct Case_item *case_item)
 		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE, ("upload line:%d\r\n",case_item->line_max));
 		/* send data to sub board after */
 		subbd_send_CCMMV(DEST_UPLD_ATT_PHA_EX, g_protocol_obj, g_bus_obj, 0, temp_att_pha, 2, case_item->ch_max);
-		usleep(5000);
 		case_item->line_max += 1;
 	}
 
+	// wait for the msq handle all the msgs
+	while((snd_index + case_item->line_max) >= get_msg_rsv_index() - 10){
+		sleep(2);
+		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE, ("wait for the rf manager (1s) ...\r\n"));
+	}
+	APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE, ("upload to rf board finish.\r\n"));
 /*	free(temp_att_pha);*/
 	return CASE_ERROR_OK;
 }
