@@ -396,11 +396,14 @@ int32_t bus_spi_open(void)
 //应该重写，仅进行收发操作
 int32_t bus_spi_write(char *data, uint32_t len)
 {
+	uint8_t split_pack = 0;
 	//usleep(100);
 	Sent_packs = 0;
 	//判定包长
  	uint16_t sendpacklength = MAX_PACKLENGTH;
 	uint16_t packages = (len - 1) / MAX_PACKLENGTH + 1;
+	if(packages > 1)
+	split_pack = 1;
 	uint16_t shortpacks = 0;
 	uint32_t sendoffset = 0;
 	int32_t RET;
@@ -469,7 +472,8 @@ int32_t bus_spi_write(char *data, uint32_t len)
 				sendoffset += len - sendoffset;
 			}
 			RET = MSG_SendData(FullsizePack, sendpacklength);
-			usleep(1000);
+			if(split_pack)
+				usleep(1000);
 			if(RET < 0)
 			{
 				printf("Send data with unknown error, MsgId:%d\n", MsgId);
