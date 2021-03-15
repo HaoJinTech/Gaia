@@ -22,6 +22,7 @@
 /* Exported functions --------------------------------------------------------*/ 
 int32_t att_is_enable(void);
 int32_t set_att(uint32_t ch, int32_t val);
+int32_t set_att_array(int32_t *ch, int32_t *value, uint32_t val_num);
 int32_t get_att(uint32_t ch);
 int32_t get_att_ch_max(void);
 

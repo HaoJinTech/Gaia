@@ -15,6 +15,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
+// featrue enable
+#define SINGLE_PACKAGE    1
+
 //#define PRJ_FILE_PATH  "/home/pi/git/Gaia/2_Application/prj_files" 
 //#define PRJ_FILE_PATH "./prj_files" 
 #define PRJ_FILE_PATH  "/usr/Gaia/prj_files"
