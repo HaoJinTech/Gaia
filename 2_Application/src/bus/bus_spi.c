@@ -25,7 +25,7 @@
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
 /* Private typedef -----------------------------------------------------------*/
-#define SPI_DEBUG  APP_DBG_ON
+#define SPI_DEBUG  APP_DBG_OFF
 /* Private define ------------------------------------------------------------*/
 #define ARRAY_SIZE(a) 				(sizeof(a) / sizeof((a)[0]))
 
@@ -185,7 +185,7 @@ Reget:
 		re_readcount++;
 		if(re_readcount >= 20)
 		{
-			printf("Re-receive pack error, 20 times trying.\n");
+			//printf("Re-receive pack error, 20 times trying.\n");
 			//pabort("Re-receive pack error, 100 times trying.\n")
 			return RET_ERROR;
 		}
@@ -222,16 +222,16 @@ Resend:
 	Sent_packs++;
 	if(ret < 0)
 	{
-		printf("Read ACK Error, resend data.\n");
-		usleep(10000);
+		//printf("Read ACK Error, resend data.\n");
+		usleep(1000);
 		MsgIDCountDown();
 		tryed_resend++;
 		goto Resend;
 	}
 	if(bus_spi_RecvCRC == 0)
 	{
-		hex_dump(ResevedMsg, len + 4, 32,"CRCSEND");
-		hex_dump(readmsg, Empty_Msg_BufferLength, 32, "CRCERR");
+		//hex_dump(ResevedMsg, len + 4, 32,"CRCSEND");
+		//hex_dump(readmsg, Empty_Msg_BufferLength, 32, "CRCERR");
 	}
 	if(readmsg[0] == MSG_HEAD && readmsg[Empty_Msg_BufferLength -2] == MSG_END)
 	{
@@ -239,7 +239,7 @@ Resend:
 		{
 			if(bus_spi_RecvCRC == 0)
 			{
-				printf("CRC Error, but get correct return\n");
+				//printf("CRC Error, but get correct return\n");
 			}
 			if(MSG_QUERYPACK == MSGRETURN)
 			{
@@ -252,27 +252,27 @@ Resend:
 		}
 		else if(readmsg[2] == RECV_NCK)
 		{
-			hex_dump(ResevedMsg, len + 4, 32,"NCKSEND");
-			hex_dump(readmsg, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "NCKRECV");
+			//hex_dump(ResevedMsg, len + 4, 32,"NCKSEND");
+			//hex_dump(readmsg, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "NCKRECV");
 			error_packs++;
 			if(readmsg[1] == MsgId)
 			{				
-				printf("Subboard cannot deal with the pack, resend a new pack.\n");
+				//printf("Subboard cannot deal with the pack, resend a new pack.\n");
 				tryed_resend++;
-				usleep(10000);
+				usleep(1000);
 				goto Resend;
 			}
 			else if(readmsg[1] == MsgId - 1)
 			{
-				printf("Can Resend the last pack.\n");
-				usleep(10000);
+				//printf("Can Resend the last pack.\n");
+				usleep(1000);
 				MsgIDCountDown();
 				goto Resend;
 			}
 			else
 			{
-				printf("MsgId is irelevant, but still resend the last pack.\n");
-				usleep(10000);
+				//printf("MsgId is irelevant, but still resend the last pack.\n");
+				usleep(1000);
 				MsgIDCountDown();
 				tryed_resend++;
 				goto Resend;
@@ -282,18 +282,18 @@ Resend:
 		{
 			if(readmsg[1] == MsgId)
 			{
-				printf("The pack is wrong, send a new pack.\n");
+				//printf("The pack is wrong, send a new pack.\n");
 				tryed_resend++;
-				usleep(10000);
+				usleep(1000);
 				goto Resend;
 			}
 		}
 	}
 	error_packs++;
-	hex_dump(readmsg, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "ERR");
-	printf("Can not receive a correct pack, resend the last message.\n");
+	//hex_dump(readmsg, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "ERR");
+	//printf("Can not receive a correct pack, resend the last message.\n");
 	tryed_resend++;
-	usleep(10000);
+	usleep(1000);
 	MsgIDCountDown();
 	goto Resend;
 }
@@ -396,6 +396,7 @@ int32_t bus_spi_open(void)
 //应该重写，仅进行收发操作
 int32_t bus_spi_write(char *data, uint32_t len)
 {
+	//usleep(100);
 	Sent_packs = 0;
 	//判定包长
  	uint16_t sendpacklength = MAX_PACKLENGTH;
@@ -468,6 +469,7 @@ int32_t bus_spi_write(char *data, uint32_t len)
 				sendoffset += len - sendoffset;
 			}
 			RET = MSG_SendData(FullsizePack, sendpacklength);
+			usleep(750);
 			if(RET < 0)
 			{
 				printf("Send data with unknown error, MsgId:%d\n", MsgId);
@@ -482,7 +484,7 @@ int32_t bus_spi_write(char *data, uint32_t len)
 	// RemainPack = MSG_SendQUERYPACK();
 	// while(RemainPack < MAX_PACK)
 	// {
-	// 	usleep(1);
+	// 	usleep(1000);
 	// 	RemainPack = MSG_SendQUERYPACK();
 	// }
 	return 0;
