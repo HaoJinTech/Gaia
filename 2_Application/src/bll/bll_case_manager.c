@@ -551,9 +551,10 @@ LOCAL int8_t upload_to_subboard_ex(struct Case_item *case_item)
 	}
 
 	// wait for the msq handle all the msgs
-	while((snd_index + case_item->line_max) >= get_msg_rsv_index() - 10){
+	while((snd_index + case_item->line_max) >= get_msg_rsv_index() + 10){
 		sleep(2);
-		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE, ("wait for the rf manager (1s) ...\r\n"));
+		APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE, 
+			("wait for the rf manager (2s) (snd:%d,rcv:%d)...\r\n", snd_index, get_msg_rsv_index()));
 	}
 	APP_DEBUGF(CASE_M_DEBUG | APP_DBG_TRACE, ("upload to rf board finish.\r\n"));
 /*	free(temp_att_pha);*/
