@@ -24,7 +24,7 @@
 /* Exported macro ------------------------------------------------------------*/
 #define APP_DEBUG                       APP_DBG_ON
 #define APP_ASSERT_ENABLE
-//#define DEBUG_INTO_FILE 
+#define DEBUG_INTO_FILE 
 
 FILE *log_flie;
 
