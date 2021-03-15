@@ -469,7 +469,7 @@ int32_t bus_spi_write(char *data, uint32_t len)
 				sendoffset += len - sendoffset;
 			}
 			RET = MSG_SendData(FullsizePack, sendpacklength);
-			usleep(750);
+			usleep(1000);
 			if(RET < 0)
 			{
 				printf("Send data with unknown error, MsgId:%d\n", MsgId);
