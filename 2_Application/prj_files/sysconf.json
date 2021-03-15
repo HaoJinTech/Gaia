@@ -14,7 +14,7 @@
         "ATT_BD_STEP": 2,
         "ATT_PROTOCOL": 0,
         "ATT_BUS": 0,
-        "ATT_REMAP_ENABLE": 0,
+        "ATT_REMAP_ENABLE": 1,
         "ATT_REMAP_INDEX": 0
     },
 
@@ -23,7 +23,7 @@
         "PHA_MAX_VAL": 359,
         "PHA_PROTOCOL": 0,
         "PHA_BUS": 0,
-        "PHA_REMAP_ENABLE": 0,
+        "PHA_REMAP_ENABLE": 1,
         "PHA_REMAP_INDEX": 0
     },
 
@@ -70,7 +70,7 @@
 
     "CASE": {
         "CASE_PATH": "case/",
-        "CASE_REMAP_ENABLE": 0,
+        "CASE_REMAP_ENABLE": 1,
         "CASE_REMAP_INDEX": 0
     }
 }
