@@ -179,12 +179,14 @@ LOCAL int32_t check_buf_and_send_msg(TCP_SOCK_BUFS *tcp_rx_buf)
 {
     uint32_t rx_size = 0;
     char *line = NULL;
-    line = rb_getline(tcp_rx_buf->rxbuf, SYMBOL_TAILED, sizeof(SYMBOL_TAILED)-1, &rx_size);
+    do{
+        line = rb_getline(tcp_rx_buf->rxbuf, SYMBOL_TAILED, sizeof(SYMBOL_TAILED)-1, &rx_size);
 
-    if(line == NULL)
-        return RET_OK;
-    APP_DEBUGF(TCP_DEBUG | APP_DBG_TRACE, ("get line: %s", line));
-    send_cmd_msg(tcp_rx_buf->sock_fd, line, send_message);
+        if(line == NULL)
+            return RET_OK;
+        APP_DEBUGF(TCP_DEBUG | APP_DBG_TRACE, ("get line: %s", line));
+        send_cmd_msg(tcp_rx_buf->sock_fd, line, send_message);
+    }while(1);
     return RET_OK;
 }
 

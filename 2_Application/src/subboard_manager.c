@@ -26,6 +26,7 @@
 typedef struct subbd_msg{
     long        msg_type;
 
+    uint32_t    msg_index;
     SUBBD_PROTOCOL *protocol_obj;    // PROTOCOL_ID_RR485, PROTOCOL_ID_HSSPI ...
     BUS_DRIVER     *bus_obj;         // BUS_ID_SPI, BUS_ID_UART ...
 
@@ -40,6 +41,8 @@ typedef struct subbd_msg{
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 LOCAL int msq_id = -1;
+LOCAL int g_msg_snd_index = 0;
+LOCAL int g_msg_rsv_index = 0;
 
 /* extern variables */
 extern BUS_DRIVER bus_drivers[];
@@ -70,6 +73,8 @@ LOCAL void *rfboard_manager(void *param)
         if(size < 0){
             APP_DEBUGF(SBBD_DEBUG | APP_DBG_LEVEL_SERIOUS , ("msgrcv failed (%d).\r\n", size));
         }
+        // update the rx tx index;
+        g_msg_rsv_index = msg.msg_index;
 
         do_protocal(msg.protocol_obj, msg.bus_obj, msg.data);
     }
@@ -87,7 +92,9 @@ LOCAL int32_t subbd_send_data(SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj,
 {
     int ret = 0;
     SUBBD_MSG msg;
+    g_msg_snd_index++;
     msg.msg_type = SBBD_MSG_TYPE;
+    msg.msg_index = g_msg_snd_index;
     msg.bus_obj = bus_obj;
     msg.protocol_obj = protocol_obj;
     msg.data = data;
@@ -112,6 +119,13 @@ int32_t init_rfboard_manager(void)
     return RET_OK;
 }
 
+uint32_t get_msg_rsv_index(void){
+    return g_msg_rsv_index;
+}
+
+uint32_t get_msg_snd_index(void){
+    return g_msg_snd_index;
+}
 
 int32_t subbd_send_FLEX(char dset, SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj, void *value)
 {

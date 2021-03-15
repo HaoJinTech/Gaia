@@ -32,6 +32,9 @@
 /* Exported functions --------------------------------------------------------*/ 
 int32_t init_rfboard_manager(void);
 
+uint32_t get_msg_rsv_index(void);
+uint32_t get_msg_snd_index(void);
+
 int32_t subbd_send_FLEX(char dset, SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj, void *value);
 int32_t subbd_send_SCSV(char dset, SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj, int32_t channel, int32_t value);
 int32_t subbd_send_MCMV(char dset, SUBBD_PROTOCOL *protocol_obj, BUS_DRIVER *bus_obj, int32_t *channel, int32_t *value, uint32_t ch_lenth);
