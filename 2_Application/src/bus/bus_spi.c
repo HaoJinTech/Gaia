@@ -474,6 +474,8 @@ int32_t bus_spi_write(char *data, uint32_t len)
 			RET = MSG_SendData(FullsizePack, sendpacklength);
 			if(split_pack)
 				usleep(1000);
+			else 
+				usleep(300);
 			if(RET < 0)
 			{
 				printf("Send data with unknown error, MsgId:%d\n", MsgId);

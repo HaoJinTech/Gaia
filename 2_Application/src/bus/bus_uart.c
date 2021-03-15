@@ -120,7 +120,8 @@ int32_t bus_uart_open(void)
 	fd = open(uart_Name, O_RDWR|O_NOCTTY|O_NDELAY, 0777);
 	if(fd < 0)
 	{
-		printf("ret:2,failed to open UART:%s\n", uart_Name);
+		APP_DEBUGF(BUS_UART_DEBUG | APP_DBG_LEVEL_WARNING ,
+		    ("ret:2,failed to open UART:%s\n", uart_Name));
         return RET_ERROR;
 	}
 	else
@@ -129,10 +130,11 @@ int32_t bus_uart_open(void)
 	}
 	if(result < 0)
 	{
-		printf("%s>>com set error", uart_Name);
+		APP_DEBUGF(BUS_UART_DEBUG | APP_DBG_LEVEL_SERIOUS ,
+		    ("%s>>com set error"));
 		return RET_ERROR;
 	}
-	printf("Success open UART:%s\n", uart_Name);
+	APP_DEBUGF(BUS_UART_DEBUG | APP_DBG_LEVEL_WARNING ,("Success open UART:%s\n", uart_Name));
 	return RET_OK;
 }
 
@@ -147,7 +149,7 @@ int32_t bus_uart_write(const char *sendmsg, uint32_t length)
     }
     else
     {
-        printf("Write device error\n");
+        APP_DEBUGF(BUS_UART_DEBUG | APP_DBG_LEVEL_WARNING ,("Write device error\n"));
         tcflush(fd, TCOFLUSH);
         return RET_ERROR;
     }
