@@ -11,6 +11,8 @@
 #if 0
 int main(void)
 {
+    test_loop();
+
     json_object *obj = 0;
 
     config_init();

@@ -24,6 +24,7 @@
 #include <sys/ioctl.h>
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
+#include <time.h>
 /* Private typedef -----------------------------------------------------------*/
 #define SPI_DEBUG  APP_DBG_ON
 /* Private define ------------------------------------------------------------*/
@@ -393,8 +394,9 @@ int32_t bus_spi_open(void)
   	return RET_OK;
 }
 
+#if 0
 //应该重写，仅进行收发操作
-int32_t bus_spi_write(const char *data, uint32_t len)
+int32_t bus_spi_write(char *data, uint32_t len)
 {
 	//usleep(100);
 	Sent_packs = 0;
@@ -489,8 +491,165 @@ int32_t bus_spi_write(const char *data, uint32_t len)
 	// }
 	return 0;
 }
+#else
 
-int32_t bus_spi_read(char *buff, int len)
+#define DATA_BUF_SIZE	256
+
+#define SYNC_ACK		0x55
+#define SYNC_ACK_2		0x77
+#define SYNC_ACK_2		0xAA
+#define SYNC_NCK		0xFA
+#define SYNC_STOP		0x5F
+#define SYNC_NULL		0
+
+const char NULL_CMD[3] = {SYNC_NULL,SYNC_NULL, SYNC_NULL};
+const char STOP_CMD[3] = {SYNC_STOP,SYNC_STOP, SYNC_STOP};
+#if 1
+int32_t bus_spi_write(char *data, uint32_t len)
+{
+	char *data_ptr = data;
+	int32_t data_left = len;
+	char readcmd[3];
+	char readmsg[DATA_BUF_SIZE];
+	char writemsg[DATA_BUF_SIZE];
+
+	char write_temp[DATA_BUF_SIZE+1];
+	char crc_val;
+
+	while(1){
+		// crc
+		memset(write_temp, 0, DATA_BUF_SIZE);
+		if(data_left < DATA_BUF_SIZE)
+			memcpy(write_temp, data_ptr, data_left);
+		else
+			memcpy(write_temp, data_ptr, DATA_BUF_SIZE);
+		crc_val = crc_high_first(write_temp, DATA_BUF_SIZE);
+		write_temp[DATA_BUF_SIZE] = crc_val;
+
+		// send val
+		transfer(spi_fd, write_temp, readmsg, DATA_BUF_SIZE+1);
+		//APP_DEBUGF_HEX(SPI_DEBUG | APP_DBG_TRACE, write_temp, DATA_BUF_SIZE+1);
+		// wait ack
+		while(1){
+			usleep(500);
+			if(data_left<=DATA_BUF_SIZE){
+				transfer(spi_fd, STOP_CMD, readcmd, 3); // end of the data
+				//APP_DEBUGF(SPI_DEBUG | APP_DBG_TRACE, ("tx STOP\r\n"));
+			}else{
+				transfer(spi_fd, NULL_CMD, readcmd, 3);
+			}
+			if(readcmd[0] == SYNC_ACK || readcmd[1] == SYNC_ACK_2){
+				if(data_left< DATA_BUF_SIZE){
+					return 0;
+				}else{
+					data_left -= DATA_BUF_SIZE;
+					//usleep(700);
+				}
+				if(data_left< DATA_BUF_SIZE){
+					memset(writemsg, 0, DATA_BUF_SIZE);
+					data_ptr += DATA_BUF_SIZE;
+					strncpy(writemsg, data_ptr, data_left);
+					data_ptr = writemsg;
+				}else{
+					data_ptr += DATA_BUF_SIZE;
+				}
+				break;
+			}
+			if(readcmd[0] == SYNC_NCK || readcmd[1] == SYNC_NCK){
+				usleep(700);
+				APP_DEBUGF(SPI_DEBUG | APP_DBG_TRACE, ("rx NCK\r\n"));
+				if(data_left == 0) continue;
+				break; // retry pre pkg
+			}
+		}
+	}
+}
+#endif
+
+#if 0
+int32_t bus_spi_write(char *data, uint32_t len)
+{
+	char *data_ptr = data;
+	int32_t data_left = len;
+	char readcmd[3];
+	char readmsg[DATA_BUF_SIZE];
+	char writemsg[DATA_BUF_SIZE];
+
+	char write_temp[DATA_BUF_SIZE+1];
+	char crc_val;
+
+	while(1){
+		// crc
+		usleep(1000);
+
+		memset(write_temp, 0, DATA_BUF_SIZE);
+		if(data_left < DATA_BUF_SIZE)
+			memcpy(write_temp, data_ptr, data_left);
+		else
+			memcpy(write_temp, data_ptr, DATA_BUF_SIZE);
+
+		data_left 
+		crc_val = crc_high_first(write_temp, DATA_BUF_SIZE);
+		write_temp[DATA_BUF_SIZE] = crc_val;
+
+		// send val
+		transfer(spi_fd, write_temp, readmsg, DATA_BUF_SIZE+1);
+		if(readmsg[0] == SYNC_ACK && readmsg[1] == SYNC_ACK_2){
+			if(data_left< DATA_BUF_SIZE){
+				return 0;
+			}else{
+			}
+			if(data_left< DATA_BUF_SIZE){
+				memset(writemsg, 0, DATA_BUF_SIZE);
+				strncpy(writemsg, data_ptr, data_left);
+				data_ptr = writemsg;
+			}else{
+				data_ptr += DATA_BUF_SIZE;
+				data_left -= DATA_BUF_SIZE;
+			}
+			continue;  // send next pkg
+		}else{
+			continue;  // retry pre pkg
+		}
+
+		// wait ack
+		while(1){
+			usleep(5);
+			if(data_left<=DATA_BUF_SIZE){
+				transfer(spi_fd, STOP_CMD, readcmd, 3); // end of the data
+				//APP_DEBUGF(SPI_DEBUG | APP_DBG_TRACE, ("tx STOP\r\n"));
+			}else{
+				transfer(spi_fd, NULL_CMD, readcmd, 3);
+			}
+			if(readcmd[0] == SYNC_ACK || readcmd[1] == SYNC_ACK){
+				if(data_left< DATA_BUF_SIZE){
+					return 0;
+				}else{
+					data_left -= DATA_BUF_SIZE;
+				}
+				if(data_left< DATA_BUF_SIZE){
+					memset(writemsg, 0, DATA_BUF_SIZE);
+					strncpy(writemsg, data_ptr, data_left);
+					data_ptr = writemsg;
+				}else{
+					data_ptr += DATA_BUF_SIZE;
+				}
+				break;
+			}
+			if(readcmd[0] == SYNC_NCK || readcmd[1] == SYNC_NCK){
+				usleep(100);
+				APP_DEBUGF(SPI_DEBUG | APP_DBG_TRACE, ("rx NCK\r\n"));
+				if(data_left == 0) continue;
+				break; // retry pre pkg
+			}
+			usleep(500);
+		}
+	}
+}
+#endif
+#endif
+
+void *bus_spi_read(char *buff, int len)
 {
 	re_readcount = 0;
 Reget:
@@ -583,6 +742,43 @@ int main(void)
 }
 #endif
 
+#if 0
+int test_loop()
+{
+	int i =0;
+	int start = 0;
+	int size = 10;
+	ret = bus_spi_init(0, 30000000/*21000000*/, NULL);
+	ret = bus_spi_open();
+#define TEST_CASE_SIZE 50000
+	char buf[TEST_CASE_SIZE];
+
+	for(i=0; i<TEST_CASE_SIZE; i++){
+		buf[i] = (char)i;
+	}
+
+	struct timespec ts;
+	struct timespec ts_pre;
+
+	while(1){
+		clock_gettime(CLOCK_REALTIME, &ts_pre);
+		if(size == 34){
+			printf("103\n");
+		}
+		bus_spi_write(&buf[start], size);
+		clock_gettime(CLOCK_REALTIME, &ts);
+		uint32_t delta = ts.tv_nsec - ts_pre.tv_nsec;
+		double speed = ((double)size * 1000000000) / (double)delta;
+		printf("datalen:%d,time:%fms,speed:%fbyte/s\n",size, ((double)delta/(double)1000000), speed);
+		size+=3;
+		start++;
+		if(size + start>TEST_CASE_SIZE) {
+			size = 0;
+			start= 0;
+		}
+	}
+}
+#endif
 
 //建立消息List，发送一个消息以后给这个消息列表加一个msgId
 
