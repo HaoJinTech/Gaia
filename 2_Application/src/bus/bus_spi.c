@@ -45,6 +45,8 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 static char device[DEVICE_NAME_LENTH] = "/dev/spidev0.0";
+static uint32_t last_sendpack_length;
+static uint32_t last_last_sendpack_length;
 static uint32_t mode;
 static uint8_t bits = 8;
 static uint32_t speed = 21000000;
@@ -53,8 +55,8 @@ static uint8_t MsgId = 0;
 static uint8_t empty[Empty_Msg_BufferLength];
 //static time_t time_op, time_ed;
 //test
-static int32_t Sent_packs = 0;
-static int32_t error_packs = 0;
+// static int32_t Sent_packs = 0;
+// static int32_t error_packs = 0;
 static int32_t tryed_resend = 0;
 static int RemainPack = 0;
 static uint8_t FullsizePack[MAX_PACKLENGTH + 6];
@@ -158,6 +160,8 @@ static int32_t io_spi_write(uint8_t *data, uint32_t len)
 	memset(ResevedMsg, 0, len + 4);
 	memcpy(ResevedMsg, packmsg, len + 4);
 	transfer(spi_fd, packmsg, readmsg, len + 4);
+	last_last_sendpack_length = last_sendpack_length;
+	last_sendpack_length = len + 4;
 	return 0;
 }
 static int32_t io_spi_read(uint8_t *buff, int len)
@@ -181,12 +185,13 @@ Reget:
 	}
 	if(resend == 1)
 	{
-		usleep(10000);
+		usleep(100000);
 		re_readcount++;
-		if(re_readcount >= 20)
+		if(re_readcount >= 5)
 		{
 			//printf("Re-receive pack error, 20 times trying.\n");
 			//pabort("Re-receive pack error, 100 times trying.\n")
+			printf("Last Last:%d,Last:%d.\n", last_last_sendpack_length, last_sendpack_length);
 			return RET_ERROR;
 		}
 		else
@@ -219,7 +224,7 @@ Resend:
 	//接收指令的回复
 	//usleep(20);
 	ret = io_spi_read(readmsg, Empty_Msg_BufferLength);
-	Sent_packs++;
+	//Sent_packs++;
 	if(ret < 0)
 	{
 		//printf("Read ACK Error, resend data.\n");
@@ -254,7 +259,7 @@ Resend:
 		{
 			//hex_dump(ResevedMsg, len + 4, 32,"NCKSEND");
 			//hex_dump(readmsg, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "NCKRECV");
-			error_packs++;
+			//error_packs++;
 			if(readmsg[1] == MsgId)
 			{				
 				//printf("Subboard cannot deal with the pack, resend a new pack.\n");
@@ -289,7 +294,7 @@ Resend:
 			}
 		}
 	}
-	error_packs++;
+	//error_packs++;
 	//hex_dump(readmsg, Empty_Msg_BufferLength,Empty_Msg_BufferLength, "ERR");
 	//printf("Can not receive a correct pack, resend the last message.\n");
 	tryed_resend++;
@@ -398,7 +403,7 @@ int32_t bus_spi_write(char *data, uint32_t len)
 {
 	uint8_t split_pack = 0;
 	//usleep(100);
-	Sent_packs = 0;
+	//Sent_packs = 0;
 	//判定包长
  	uint16_t sendpacklength = MAX_PACKLENGTH;
 	uint16_t packages = (len - 1) / MAX_PACKLENGTH + 1;
@@ -472,8 +477,8 @@ int32_t bus_spi_write(char *data, uint32_t len)
 				sendoffset += len - sendoffset;
 			}
 			RET = MSG_SendData(FullsizePack, sendpacklength);
-			if(split_pack)
-				usleep(1000);
+			// if(split_pack)
+			// 	usleep(10);
 			if(RET < 0)
 			{
 				printf("Send data with unknown error, MsgId:%d\n", MsgId);
@@ -554,14 +559,14 @@ int32_t bus_spi_close(void *param)
                   bus_spi_ioctrl,\
                   bus_spi_close}
 
-#if 0
+#if 1
 
-static int SendPackCount = 0;
+// static int SendPackCount = 0;
 
-double writedata_time()
-{
-	return difftime(time_ed, time_op);
-}
+// double writedata_time()
+// {
+// 	return difftime(time_ed, time_op);
+// }
 
 
 //建立消息List，发送一个消息以后给这个消息列表加一个msgId
@@ -569,20 +574,143 @@ double writedata_time()
 //发送消息与收包消息同时进行，收到的消息包不是以255 255 0结尾就再发一个指定长度(EMTPY_MSG_LENGTH)的空包，直到收到包含255 255 0结尾的包作为接收结束
 //对于接收的消息进行
 
+int MsgIDCheck(void)
+{
+	uint8_t read_forthis[Empty_Msg_BufferLength];
+	memset(read_forthis, 0, Empty_Msg_BufferLength);
+	io_spi_read(read_forthis, Empty_Msg_BufferLength);
+	char temp = read_forthis[0];
+	int i = 0;
+	while(i < Empty_Msg_BufferLength - 1)
+	{
+		i++;
+		if(temp != read_forthis[i])
+		{
+			if(read_forthis[0] == MSG_HEAD && read_forthis[Empty_Msg_BufferLength - 2] == MSG_END)
+			{
+				MsgId = read_forthis[1];
+				printf("Get MsgID:%d\n",MsgId);
+				break;
+			}
+		}
+	}
+	uint8_t data[MAX_PACKLENGTH];
+	memset(data, 0, MAX_PACKLENGTH);
+	uint8_t readbuff[Empty_Msg_BufferLength];
+	memset(readbuff, 0, Empty_Msg_BufferLength);
+	io_spi_write(data, MAX_PACKLENGTH);
+	//接收指令的回复
+	//usleep(20);
+	transfer(spi_fd, empty, readbuff, Empty_Msg_BufferLength);
+	//是否有全一样的包，有就说明副板没准备好，再收一次
+	while(i < Empty_Msg_BufferLength - 1)
+	{
+		i++;
+		if(temp != read_forthis[i])
+		{
+			printf("success break out.\n");
+			return 0;
+		}
+	}	
+	printf("Failed to break out.\n");
+	return -1;
+}
+
+int SendCheckData(void)
+{
+	uint8_t testindex = 0;
+	uint8_t testbuf[MAX_PACKLENGTH];
+	
+	uint8_t read_test_buff[Empty_Msg_BufferLength];
+	memset(read_test_buff, 0 , Empty_Msg_BufferLength);
+
+again:
+	if(testindex == 0xFF)
+	{
+		printf("Failed to break out.\n");
+		return -1;
+	}
+	memset(testbuf, testindex, MAX_PACKLENGTH);
+	testindex++;
+
+	io_spi_write(testbuf, MAX_PACKLENGTH);
+	transfer(spi_fd, empty, read_test_buff, Empty_Msg_BufferLength);
+	//是否有全一样的包，有就说明副板没准备好，再收一次
+	char tempchar = read_test_buff[0];
+	int soi = 0;
+	while(soi < Empty_Msg_BufferLength - 1)
+	{
+		soi++;
+		if(tempchar != read_test_buff[soi])
+		{
+			printf("Success break out, MsgId:%d", MsgId);
+			return 0;
+		}
+	}
+	goto again;
+}
+int anotherCheckData(void)
+{
+	uint8_t checklength = 1;
+	uint8_t testbuf[MAX_PACKLENGTH];
+	uint8_t read_test_buff[Empty_Msg_BufferLength];
+	memset(read_test_buff, 0 , Empty_Msg_BufferLength);
+	while(checklength <= MAX_PACKLENGTH)
+	{
+		memset(testbuf, checklength, checklength);
+		io_spi_write(testbuf, checklength);
+		transfer(spi_fd, empty, read_test_buff, Empty_Msg_BufferLength);
+		//是否有全一样的包，有就说明副板没准备好，再收一次
+		char tempchar = read_test_buff[0];
+		int soi = 0;
+		while(soi < Empty_Msg_BufferLength - 1)
+		{
+			soi++;
+			if(tempchar != read_test_buff[soi])
+			{
+				printf("Success break out, MsgId:%d", MsgId);
+				return 0;
+			}
+		}
+		checklength++;
+	}
+	printf("Failed to break out.\n");
+	return -1;
+}
 int main(void)
 {
-	uint32_t MessageCount = 5120000;
+	uint32_t MessageCount = 1027;
+	int sendpackCount = 5000000;
 	char BufMsg[MessageCount];
 	memset(BufMsg, 0, MessageCount);
-	for(int i = 0;i < MessageCount;i++)
+	BufMsg[0] = 250;
+	BufMsg[MessageCount - 2] = 0xFF;
+	BufMsg[MessageCount - 1] = 0xFF;
+	for(int i = 0;i < (MessageCount - 3) / 4;i++)
 	{
-		BufMsg[i] = i;
+		BufMsg[i * 4 + 1] = ((i + 1) >> 8) & 0xFF;
+		BufMsg[i * 4 + 2] = ((i + 1) & 0xFF);
+		BufMsg[i * 4 + 3] = (((15 * i) % 360) >> 8) & 0xFF;
+		BufMsg[i * 4 + 4] = ((15 * i)% 360) & 0xFF;
 	}
 	ret = bus_spi_init(0, 21000000, NULL);
 	ret = bus_spi_open();
-	ret = bus_spi_write(BufMsg, MessageCount);
-	printf("Sent:%d,Error:%d\n",Sent_packs, error_packs);
-	printf("Send Data use time:%fs\n", writedata_time());
+	while(sendpackCount--)
+	{
+	 	ret = bus_spi_write(BufMsg, MessageCount);
+	}
+
+	//SendCheckData();
+	// uint8_t read_forthis[Empty_Msg_BufferLength];
+	// memset(read_forthis, 0, Empty_Msg_BufferLength);
+	// io_spi_read(read_forthis, Empty_Msg_BufferLength);
+
+	//anotherCheckData();
+	
+	MsgIDCheck();
+
+	//printf("Sent over.\n");
+	//printf("Send Data use time:%fs\n", writedata_time());
 	return 0;
 }
 #endif

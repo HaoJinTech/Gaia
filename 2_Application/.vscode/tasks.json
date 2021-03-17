@@ -19,6 +19,24 @@
                 "isDefault": true
             },
             "dependsOn":["make clean"]
+        },
+        {
+            "label": "C/C++: gcc-8 build active file",
+            "type": "cppbuild",
+            "command": "/usr/bin/gcc-8",
+            "args": [
+                "-g",
+                "${file}",
+                "${workspaceFolder}/src/CRC.c",
+                "-I",
+                "${workspaceFolder}/inc",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ],
     "version": "2.0.0"
