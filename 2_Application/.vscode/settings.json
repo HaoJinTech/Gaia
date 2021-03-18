@@ -12,6 +12,7 @@
         "protocol_env.h": "c",
         "bll_calibration.h": "c",
         "time.h": "c",
-        "stdint.h": "c"
+        "stdint.h": "c",
+        "type_traits": "c"
     }
 }
