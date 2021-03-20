@@ -451,11 +451,7 @@ int32_t calibration_proc(uint32_t ch, int32_t att_val, int32_t pha_val, int32_t 
 			("calibration infomation not found.\r\n"));	
 		return 0;
 	}
-	if(cal_info->point_num == 0) {
-		APP_DEBUGF(CALI_DEBUG | APP_DBG_LEVEL_SERIOUS ,
-			("calibration infomation number is 0.\r\n"));	
-		return 0;
-	}
+
 	// step1:  offset
 	val += scal_offset[ch];
 	

@@ -274,7 +274,7 @@ open_retry:
     }else{
       usleep(100000);
     }
-    read_size = init_bus->read(rxbuf, 6);
+    read_size = init_bus->read(rxbuf, 8);
     if(read_size == 6 && rxbuf[0] == 253){ //CMD_TYPE_INIT
       if(data->s_board_num < rxbuf[1]+1){
         data->s_board_num = rxbuf[1]+1;
