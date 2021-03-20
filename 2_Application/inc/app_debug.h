@@ -37,7 +37,7 @@ FILE *log_flie;
 #endif
 
 #define APP_DBG_TYPES_ON                (APP_DBG_ON | APP_DBG_TRACE | APP_DBG_STATE)
-#define APP_DBG_MIN_LEVEL               APP_DBG_LEVEL_ALL    //APP_DBG_LEVEL_ALL APP_DBG_LEVEL_WARNING
+#define APP_DBG_MIN_LEVEL               APP_DBG_LEVEL_WARNING    //APP_DBG_LEVEL_ALL APP_DBG_LEVEL_WARNING
 
 void sys_arch_assert(const char* file, int line);
 void print_hex(const char* data, int data_len);

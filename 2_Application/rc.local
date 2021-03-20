@@ -19,7 +19,8 @@ fi
 
 #LOG_PATH=/usr/Gaia/Gaia.log
 #LOG_PATH=/home/pi/git/Gaia/2_Application/Gaia.log
-APP_PATH=/home/pi/git/Gaia/2_Application/Gaia
+#APP_PATH=/home/pi/git/Gaia/2_Application/Gaia
+APP_PATH=/usr/Gaia/Gaia
 
 #if [ ! -d $LOG_PATH ];then
 #   touch $LOG_PATH
@@ -27,6 +28,6 @@ APP_PATH=/home/pi/git/Gaia/2_Application/Gaia
 #   chown pi:pi $LOG_PATH
 #fi
 
-su pi -c "exec $APP_PATH"
+exec $APP_PATH
 
 exit 0
