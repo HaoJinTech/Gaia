@@ -167,7 +167,7 @@ int32_t init_att(json_object *att_obj)
     g_att_vals =    (int32_t*)malloc(sizeof(int32_t) * g_ch_max);
 
     for(i=0; i<g_ch_max; i++) {
-        g_att_vals[i] = 0;
+        g_att_vals[i] = g_val_max;
     }
 
     return RET_OK;

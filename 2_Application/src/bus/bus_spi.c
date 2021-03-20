@@ -683,7 +683,7 @@ RP:
 	return 0;
 }
 
-void *bus_spi_read(char *buff, int len)
+int32_t bus_spi_read(char *buff, int len)
 {
 	return buff;
 }
