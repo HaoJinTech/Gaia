@@ -34,9 +34,9 @@
         "CALI_OBJS": [
             {
                 "NAME": "2G6",
-                "ADJ_PHA_BY_ATT": false,
+                "ADJ_PHA_BY_ATT": true,
                 "ADJ_PHA_BY_ATT_FILE": "2G6_inf.csv",
-                "ADJ_ATT_BY_PHA": false,
+                "ADJ_ATT_BY_PHA": true,
                 "ADJ_ATT_BY_PHA_FILE": "2G6_attinf.csv",
                 "ADJ_PHA_BY_TABLE": true,
                 "ADJ_PHA_BY_TABLE_FILE": "2G6_pha.csv",
@@ -46,9 +46,9 @@
             },
             {
                 "NAME": "TEMP",
-                "ADJ_PHA_BY_ATT": false,
+                "ADJ_PHA_BY_ATT": true,
                 "ADJ_PHA_BY_ATT_FILE": "TEMP_inf.csv",
-                "ADJ_ATT_BY_PHA": false,
+                "ADJ_ATT_BY_PHA": true,
                 "ADJ_ATT_BY_PHA_FILE": "TEMP_attinf.csv",
                 "ADJ_PHA_BY_TABLE": true,
                 "ADJ_PHA_BY_TABLE_FILE": "TEMP_pha.csv",

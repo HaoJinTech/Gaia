@@ -46,13 +46,13 @@ void print_hex(const char* data, int data_len)
 
         for (i = 0; i < LINE_LEN; i++)
         {
-            if(i%8 == 0) printf(" ");
+            //if(i%8 == 0) printf(" ");
             printf("%02X ", data[j*LINE_LEN+i]);
         }
 
         for (i = 0; i < LINE_LEN; i++)
         {
-            if(i%8 == 0) printf(" ");
+            //if(i%8 == 0) printf(" ");
             if ((data[j*LINE_LEN+i] < 0x20) || (data[j*LINE_LEN+i] > 0x7F))
             {
                 printf(".");
