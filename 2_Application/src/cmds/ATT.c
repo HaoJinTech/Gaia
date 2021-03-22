@@ -50,9 +50,12 @@ LOCAL void cmd_att(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun)
       for(j = 0;j<val_num;j++){
         send_buf_fun(dest_fd, "%d %d;", ch[j]+1, get_att(ch[j]));
       }
+      if(ch) free(ch);
+      if(val) free(val);
     }else{
       goto failed_end;      
     }
+
 
     send_buf_fun(dest_fd, "\r\n");
     free_cmd_obj(obj);

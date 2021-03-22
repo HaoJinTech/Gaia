@@ -40,10 +40,11 @@ LOCAL SUBBD_PROTOCOL  *g_protocol_obj = 0;
 LOCAL BUS_DRIVER      *g_bus_obj = 0;
 
 /* Private function prototypes -----------------------------------------------*/
-LOCAL int16_t att_get_step_offset(int16_t val);
 
 /* Private functions ----------------------------------------------------------*/
-LOCAL int16_t att_get_step_offset(int16_t val)
+
+/* Public functions ----------------------------------------------------------*/
+int16_t att_get_step_offset(int16_t val)
 {
 	int16_t rt_val;
 	if(g_logic_step < g_bd_step){					
@@ -54,7 +55,6 @@ LOCAL int16_t att_get_step_offset(int16_t val)
 	return rt_val;
 }
 
-/* Public functions ----------------------------------------------------------*/
 int32_t att_is_enable(void)
 {
     return g_att_enable;
@@ -92,42 +92,45 @@ int32_t set_att(uint32_t ch, int32_t val)
     return RET_OK;
 }
 
-int32_t set_att_array(int32_t *ch, int32_t *value, uint32_t val_num)
+int32_t set_att_array(const int32_t *ch, const int32_t *value, uint32_t val_num)
 {
     uint32_t i = 0;
     int32_t *ch_att = NULL;
     int32_t *ch_pha = NULL;
-    int32_t *pha = NULL;
+    int32_t *val_pha = NULL;
+    int32_t *val_att = NULL;
 
     ch_att = (int32_t*)malloc(sizeof(int32_t)*val_num);
+    val_att = (int32_t*)malloc(sizeof(int32_t)*val_num);
     if(calibration_is_enabled()){
         ch_pha = (int32_t*) malloc(sizeof(int32_t)*val_num);
-        pha = (int32_t*) malloc(sizeof(int32_t)*val_num);
+        val_pha = (int32_t*) malloc(sizeof(int32_t)*val_num);
     }
 
     for(i=0;i<val_num;i++){
         if(ch[i]>= g_ch_max) continue;
         ch_att[i] = ch[i];
-        if(value[i] >= g_val_max) value[i] = g_val_max;
-        g_att_vals[ch[i]] = value[i];
-        value[i] = att_get_step_offset(value[i]);
+        val_att[i] = value[i];
+        if(val_att[i] >= g_val_max) val_att[i] = g_val_max;
+        g_att_vals[ch[i]] = val_att[i];
+        val_att[i] = att_get_step_offset(val_att[i]);
 
         if(calibration_is_enabled()){
-            pha[i] = calibration_proc(ch[i], value[i], get_pha(ch[i]), &value[i]);
+            val_pha[i] = calibration_proc(ch[i], val_att[i], get_pha(ch[i]), &val_att[i]);
         }
 
         // remap the channel
         if(g_remap_enable){
-            ch_att[i] = ch_remap(g_remap_index, ch[i]);
-            if(calibration_is_enabled()){
-                ch_pha[i] = ch_att[i];
-            }
+            ch_att[i] = ch_remap(g_remap_index, ch_att[i]);
+        }
+        if(calibration_is_enabled()){
+            ch_pha[i] = ch_att[i];
         }
     }
 
-    subbd_send_MCMV(DEST_ATT, g_protocol_obj, g_bus_obj, ch_att, value, val_num);
+    subbd_send_MCMV(DEST_ATT, g_protocol_obj, g_bus_obj, ch_att, val_att, val_num);
     if(calibration_is_enabled()){
-        subbd_send_MCMV(DEST_PHA, g_protocol_obj, g_bus_obj, ch_pha, pha, val_num);
+        subbd_send_MCMV(DEST_PHA, g_protocol_obj, g_bus_obj, ch_pha, val_pha, val_num);
     }
     return RET_OK;
 }
