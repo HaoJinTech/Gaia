@@ -101,15 +101,18 @@ int32_t set_pha(uint32_t ch, int32_t val)
 int32_t set_pha_array(int32_t *ch, int32_t *value, uint32_t val_num)
 {
     uint32_t i = 0;
+    int32_t *ch_pha = NULL;
     int32_t *ch_att = NULL;
     int32_t *att = NULL;
 
+    ch_pha = (int32_t*)malloc(sizeof(int32_t)*val_num);
     if(calibration_is_enabled()){
         ch_att = (int32_t*) malloc(sizeof(int32_t)*val_num);
         att = (int32_t*) malloc(sizeof(int32_t)*val_num);
     }
 
     for(i=0;i<val_num;i++){
+        ch_pha[i] = ch[i];
         if(ch[i]>= g_ch_max) continue;
         if(value[i] >= g_val_max) value[i] = g_val_max;
         g_pha_vals[ch[i]] = value[i];
@@ -119,14 +122,14 @@ int32_t set_pha_array(int32_t *ch, int32_t *value, uint32_t val_num)
 
         // remap the channel
         if(g_remap_enable){
-            ch[i] = ch_remap(g_remap_index, ch[i] );
+            ch_pha[i] = ch_remap(g_remap_index, ch[i] );
             if(calibration_is_enabled()){
-                ch_att[i] = ch[i];
+                ch_att[i] = ch_pha[i];
             }
         }
     }
 
-    subbd_send_MCMV(DEST_PHA, g_protocol_obj, g_bus_obj, ch, value, val_num);
+    subbd_send_MCMV(DEST_PHA, g_protocol_obj, g_bus_obj, ch_pha, value, val_num);
     if(calibration_is_enabled()){
         subbd_send_MCMV(DEST_ATT, g_protocol_obj, g_bus_obj, ch_att, att, val_num);
     }

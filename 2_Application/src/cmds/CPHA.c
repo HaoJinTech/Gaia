@@ -47,7 +47,7 @@ LOCAL void cmd_cpha(char* recv_buf, uint32_t dest_fd, SEND_BUF send_buf_fun)
 
       set_pha_array(ch, val, val_num);
       for(j = 0;j<val_num;j++){
-        send_buf_fun(dest_fd, "%d %d;", j+1, get_pha(j));
+        send_buf_fun(dest_fd, "%d %d;", ch[j] + 1, get_pha(ch[j]));
       }
 
     }else{
