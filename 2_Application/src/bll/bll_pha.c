@@ -105,7 +105,6 @@ int32_t set_pha_array(const int32_t *ch, const int32_t *value, uint32_t val_num)
     uint32_t i = 0;
     int32_t *ch_pha = NULL;
     int32_t *ch_att = NULL;
-    int32_t *ch_pha = NULL;
     int32_t *val_pha = NULL;
     int32_t *val_att = NULL;
 
