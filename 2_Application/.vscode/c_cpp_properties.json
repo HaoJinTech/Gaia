@@ -3,12 +3,12 @@
         {
             "name": "Linux",
             "includePath": [
+                "/usr/include/**",
+                "/usr/include/linux/**",
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/lib/inc",
                 "${workspaceFolder}/inc",
-                "${workspaceFolder}/src/cmds",
-                "/usr/include/**",
-                "/usr/include/linux/**"
+                "${workspaceFolder}/src/cmds"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc-8",

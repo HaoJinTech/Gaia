@@ -18,7 +18,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <time.h>
+#include </usr/include/linux/time.h>
 #include <errno.h>
 
 /* Private typedef -----------------------------------------------------------*/
