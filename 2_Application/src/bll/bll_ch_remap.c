@@ -92,8 +92,8 @@ end:
 int32_t ch_remap(uint32_t index, uint32_t ch)
 {
   if(index<remap_obj_num && ch < mapping_objs[index].num){
-    APP_DEBUGF(REMAP_DEBUG | APP_DBG_TRACE, ("%d->%d\n", ch, mapping_objs[index].map[ch]));
-    return mapping_objs[index].map[ch];
+    // APP_DEBUGF(REMAP_DEBUG | APP_DBG_TRACE, ("%d->%d\n", ch, mapping_objs[index].map[ch]));
+     return mapping_objs[index].map[ch];
   }else return ch;
 }
 

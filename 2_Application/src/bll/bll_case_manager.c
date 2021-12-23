@@ -1075,8 +1075,8 @@ int32_t init_model_case_manager(json_object *case_json_obj)
     if(protocol_id > SUBBD_PROTOCOL_SIZE) protocol_id = PROTOCOL_ID_RR485;
 	g_protocol_obj = get_protocol_obj(protocol_id);
 
-    bus_id =    config_get_int(case_json_obj, "CASE_BUS", BUS_ID_SPI);
-    if(bus_id > BUS_DRIVER_NUM) bus_id = BUS_ID_SPI;
+    bus_id =    config_get_int(case_json_obj, "CASE_BUS", BUS_ID_UART);
+    if(bus_id > BUS_DRIVER_NUM) bus_id = BUS_ID_UART;
 	g_bus_obj = get_bus_obj(bus_id);
 
 	g_remap_enable =config_get_bool(case_json_obj, "CASE_REMAP_ENABLE", 0);

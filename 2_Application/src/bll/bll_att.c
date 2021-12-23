@@ -163,8 +163,8 @@ int32_t init_att(json_object *att_obj)
     if(protocol_id > SUBBD_PROTOCOL_SIZE) protocol_id = PROTOCOL_ID_RR485;
     g_protocol_obj = get_protocol_obj(protocol_id);
 
-    bus_id =        config_get_int(att_obj, "ATT_BUS", BUS_ID_SPI);
-    if(bus_id > BUS_DRIVER_NUM) bus_id = BUS_ID_SPI;
+    bus_id =        config_get_int(att_obj, "ATT_BUS", BUS_ID_UART);
+    if(bus_id > BUS_DRIVER_NUM) bus_id = BUS_ID_UART;
     g_bus_obj =     get_bus_obj(bus_id);
 
     g_att_vals =    (int32_t*)malloc(sizeof(int32_t) * g_ch_max);

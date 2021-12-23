@@ -27,14 +27,14 @@ LOCAL BUS_DRIVER      *g_init_bus_obj = 0;
 LOCAL int32_t init_protocol_env(void)
 {
     int protocol_id = 0;
-    int bus_id = 1;
+    int bus_id = 2;
     int bus_init = 2;
 
     g_protocol_obj = &protocols[protocol_id];
     g_bus_obj =      &bus_drivers[bus_id];
     g_init_bus_obj = &bus_drivers[bus_init];
 
-    g_bus_obj->init(0, 21000000, NULL);
+    g_bus_obj->init(0, 115200, NULL);
     g_bus_obj->sem_rx_ready = 0;
     g_bus_obj->open();
 

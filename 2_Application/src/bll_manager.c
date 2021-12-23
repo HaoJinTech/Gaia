@@ -10,6 +10,7 @@
 	*/
 	
 /* Includes ------------------------------------------------------------------*/
+#include <stdio.h>
 #include "bll/bll_att.h"
 #include "bll/bll_pha.h"
 #include "bll/bll_calibration.h"
@@ -32,7 +33,7 @@ typedef struct bll_objects{
 /* Private variables ---------------------------------------------------------*/
 BLL_OBJ bll_objs[] ={
     {"ATT", init_att},
-    {"PHA", init_pha},
+    //{"PHA", init_pha},
     {"CALIBRATION", init_calibration},
     {"CHREMAP", init_ch_remap},
     {"CASE", init_model_case_manager}
@@ -51,10 +52,12 @@ LOCAL int32_t bll_assembly(void)
     for(i=0; i< BLL_OBJ_SIZE; i++){
         obj = json_object_object_get(config_json_obj, bll_objs[i].obj_name);
         if(obj) {
-            bll_objs[i].init_fun(obj);            
+            printf("\n***********************************    %s    ***********************************\n",bll_objs[i].obj_name);
+            bll_objs[i].init_fun(obj);       
         }
     }
-	pha_refresh_all();
+
+	//pha_refresh_all();
 
     return RET_OK;
 }

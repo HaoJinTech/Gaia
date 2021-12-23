@@ -42,7 +42,7 @@
 #define MAX_PACK					20
 #define PACK_GATE					10
 #define MaxRetry					20
-#define DEVICE_NAME_LENTH  64
+#define DEVICE_NAME_LENTH  			64
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 static char device[DEVICE_NAME_LENTH] = "/dev/spidev0.0";
@@ -399,7 +399,7 @@ int32_t bus_spi_open(void)
 
 #define SYNC_ACK		0x55
 #define SYNC_ACK_2		0x77
-#define SYNC_ACK_2		0xAA
+// #define SYNC_ACK_2		0xAA
 #define SYNC_NCK		0xFA
 #define SYNC_STOP		0x5F
 #define SYNC_NULL		0
@@ -468,7 +468,7 @@ int32_t bus_spi_write(char *data, uint32_t len)
 			retry_time++;
 			if(retry_time > RETRY_ACK_TIME) {
 				APP_DEBUGF(SPI_DEBUG | APP_DBG_LEVEL_WARNING, ("ack rx timeout.\r\n"));
-				return;
+				return 0;
 			}
 		}
 	}

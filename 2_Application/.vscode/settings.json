@@ -16,6 +16,8 @@
         "type_traits": "c",
         "sys_config.h": "c",
         "tcp_server.h": "c",
-        "cmd_manager.h": "c"
+        "cmd_manager.h": "c",
+        "app_debug.h": "c",
+        "bus_prototype.h": "c"
     }
 }

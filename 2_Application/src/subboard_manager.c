@@ -73,6 +73,7 @@ LOCAL void *rfboard_manager(void *param)
         if(size < 0){
             APP_DEBUGF(SBBD_DEBUG | APP_DBG_LEVEL_SERIOUS , ("msgrcv failed (%d).\r\n", size));
         }
+
         // update the rx tx index;
         g_msg_rsv_index = msg.msg_index;
 
@@ -115,7 +116,7 @@ int32_t init_rfboard_manager(void)
     pthread_t	tid;
 
 	pthread_create(&tid, NULL, rfboard_manager, NULL);
-
+    
     return RET_OK;
 }
 

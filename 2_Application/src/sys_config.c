@@ -36,12 +36,13 @@ void config_init(void)
 
   strncpy(full_path, PRJ_FILE_PATH, SYS_CONF_PATH_LEN );
   strncat(full_path, SYS_CONFIG_NAME, SYS_CONF_PATH_LEN - strlen(PRJ_FILE_PATH));
-
+  
   config_json_obj = json_object_from_file(full_path);
+
   if(!config_json_obj){
     APP_DEBUGF(CONF_DEBUG | APP_DBG_LEVEL_WARNING, ("json error: %s", json_util_get_last_err()));
   }
-
+  
 }
 
 const char* config_get_string(json_object *obj_base, char *key, const char *defval)
